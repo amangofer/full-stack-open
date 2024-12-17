@@ -26,13 +26,31 @@ const App = () => {
     setPoints(newPoints);
   }
 
+  const getMostVoted = () => {
+    let maxValue = -Infinity;
+    let maxKey = -1;
+    for(const [key, value] of Object.entries(points)) {
+      if(value > maxValue) {
+        maxValue = value;
+        maxKey = key;
+      }
+    }
+    return [maxKey, maxValue];
+  }
+
   return (
     <div>
+      <h1>Anecdote of the day</h1>
       {anecdotes[selected]}
+      <p>has {points[selected]}, votes</p>
       <div>
-        <p>has {points[selected]}, votes</p>
         <button onClick={handleVote}>vote</button>
         <button onClick={handleNext}>next anecdote</button>
+      </div>
+      <div>
+        <h2>Anecdote with most votes</h2>
+        <p>{anecdotes[getMostVoted()[0]]}</p>
+        <p>has {getMostVoted()[1]} votes</p>
       </div>
     </div>
   )
