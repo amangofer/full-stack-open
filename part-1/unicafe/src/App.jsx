@@ -17,6 +17,10 @@ const StatisticLine = (props) => {
 }
 
 const Statistics = (props) => {
+  const total = props.good +  props.neutral +  props.bad;
+  const average = ((props.good -  props.bad) /  total).toFixed(1);
+  const positive = (props.good * 100 /  total).toFixed(1);
+
 
   if(!props.good && !props.netural && !props.bad) {
     return (
@@ -35,9 +39,9 @@ const Statistics = (props) => {
           <StatisticLine text="good" value={props.good}/>
           <StatisticLine text="neutral" value={props.neutral}/>
           <StatisticLine text="bad" value={props.bad}/>
-          <StatisticLine text="all" value={props.total}/>
-          <StatisticLine text="average" value={props.average}/>
-          <StatisticLine text="positive" value={props.positive}/>
+          <StatisticLine text="all" value={total}/>
+          <StatisticLine text="average" value={average}/>
+          <StatisticLine text="positive" value={positive}/>
         </tbody>
       </table>
     </>
@@ -50,10 +54,7 @@ const App = () => {
   const [neutral, setNeutral] = useState(0)
   const [bad, setBad] = useState(0)
 
-  const total = good + neutral + bad;
-  const average = total / 3;
-  const positive = good * 100 / total;
-
+  
   const handleGood = () => {
     setGood(good + 1);
   }
@@ -70,7 +71,7 @@ const App = () => {
       <Button onClick={handleGood} text="good" />
       <Button onClick={handleNeutral} text="neutral" />
       <Button onClick={handleBad} text="bad" />
-      <Statistics good={good} neutral={neutral} bad={bad} total={total} average={average.toFixed(1)} positive={positive.toFixed(1)}/>
+      <Statistics good={good} neutral={neutral} bad={bad}/>
     </div>
   )
 }
