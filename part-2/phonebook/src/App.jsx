@@ -1,5 +1,51 @@
 import { useState } from "react";
 
+const Filter = ({ name, onChange }) => {
+  return (
+    <div>
+      filter shown with <input value={name} onChange={onChange} />
+    </div>
+  );
+};
+
+const PersonForm = ({
+  newName,
+  newNumber,
+  onSubmit,
+  onNameChange,
+  onNumberChange,
+}) => (
+  <form onSubmit={onSubmit}>
+    <div>
+      name: <input value={newName} onChange={onNameChange} />
+    </div>
+    <div>
+      number: <input value={newNumber} onChange={onNumberChange} />
+    </div>
+    <div>
+      <button type="submit">add</button>
+    </div>
+  </form>
+);
+
+const Person = ({ person }) => {
+  return (
+    <div>
+      {person.name} {person.number}
+    </div>
+  );
+};
+
+const Persons = ({ phonebook }) => {
+  return (
+    <>
+      {phonebook.map((person) => {
+        return <Person key={person.id} person={person} />;
+      })}
+    </>
+  );
+};
+
 const App = () => {
   const [persons, setPersons] = useState([
     { name: "Arto Hellas", number: "040-123456", id: 1 },
@@ -34,7 +80,7 @@ const App = () => {
     const newPerson = {
       name: newName,
       number: newNumber,
-      id: perosn.length + 1,
+      id: persons.length + 1,
     };
 
     setPersons(persons.concat(newPerson));
@@ -42,7 +88,7 @@ const App = () => {
     setNewNumber("");
   };
 
-  const phonebookList =
+  const phonebook =
     name.length > 0
       ? persons.filter((person) => person.name.toLowerCase().includes(name))
       : persons;
@@ -50,27 +96,17 @@ const App = () => {
   return (
     <div>
       <h2>Phonebook</h2>
-      <div>
-        filter shown with <input value={name} onChange={handleFilter} />
-      </div>
-      <h2>add a new</h2>
-      <form onSubmit={addPerson}>
-        <div>
-          name: <input value={newName} onChange={handleNameChange} />
-        </div>
-        <div>
-          number: <input value={newNumber} onChange={handleNumberChange} />
-        </div>
-        <div>
-          <button type="submit">add</button>
-        </div>
-      </form>
-      <h2>Numbers</h2>
-      {phonebookList.map((person) => (
-        <div key={person.id}>
-          {person.name} {person.number}
-        </div>
-      ))}
+      <Filter name={name} onChange={handleFilter} />
+      <h3>Add a new</h3>
+      <PersonForm
+        newName={newName}
+        newNumber={newNumber}
+        onSubmit={addPerson}
+        onNameChange={handleNameChange}
+        onNumberChange={handleNumberChange}
+      />
+      <h3>Numbers</h3>
+      <Persons phonebook={phonebook} />
     </div>
   );
 };
