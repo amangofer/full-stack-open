@@ -29,19 +29,26 @@ const PersonForm = ({
   </form>
 );
 
-const Person = ({ person }) => {
+const Person = ({ person, handleDelete }) => {
   return (
     <div>
       {person.name} {person.number}
+      <button onClick={handleDelete}>Delete</button>
     </div>
   );
 };
 
-const Persons = ({ phonebook }) => {
+const Persons = ({ phonebook, handleDelete }) => {
   return (
     <>
       {phonebook.map((person) => {
-        return <Person key={person.id} person={person} />;
+        return (
+          <Person
+            key={person.id}
+            person={person}
+            handleDelete={() => handleDelete(person.id)}
+          />
+        );
       })}
     </>
   );
@@ -69,6 +76,17 @@ const App = () => {
 
   const handleFilter = (event) => {
     setName(event.target.value);
+  };
+
+  const handleDelete = (id) => {
+    const person = persons.find((person) => person.id === id);
+    if (confirm(`Delete ${person.name}`)) {
+      personServices.remove(id).then((returnedPerson) => {
+        const newPersons = persons.filter((person) => person.id == id);
+        setPersons(newPersons);
+        console.log(returnedPerson);
+      });
+    }
   };
 
   const addPerson = (event) => {
@@ -109,7 +127,7 @@ const App = () => {
         onNumberChange={handleNumberChange}
       />
       <h3>Numbers</h3>
-      <Persons phonebook={phonebook} />
+      <Persons phonebook={phonebook} handleDelete={handleDelete} />
     </div>
   );
 };
