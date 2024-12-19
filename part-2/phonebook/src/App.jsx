@@ -89,18 +89,34 @@ const App = () => {
     }
   };
 
+  const updatePerson = (id, newObj) => {
+    const person = persons.find((person) => person.id === id);
+    if (
+      confirm(
+        `${person.name} is already added to the phonebook, replace the old number with the new one?`
+      )
+    ) {
+      personServices.update(id, newObj).then((returnedData) => {
+        setPersons(
+          persons.map((person) => (person.id == id ? returnedData : person))
+        );
+      });
+    }
+  };
+
   const addPerson = (event) => {
     event.preventDefault();
-    const duplicate = persons.filter((person) => person.name === newName);
-    if (duplicate.length > 0) {
-      alert(`${newName} is already added to phonebook`);
-      return;
-    }
+    const duplicate = persons.find((person) => person.name === newName);
 
     const newPerson = {
       name: newName,
       number: newNumber,
     };
+
+    if (duplicate) {
+      updatePerson(duplicate.id, newPerson);
+      return;
+    }
 
     personServices.create(newPerson).then((returnedPerson) => {
       setPersons(persons.concat(returnedPerson));
