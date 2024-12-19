@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import axios from "axios";
+import personServices from "./services/persons";
 
 const Filter = ({ name, onChange }) => {
   return (
@@ -53,13 +53,11 @@ const App = () => {
   const [newNumber, setNewNumber] = useState("");
   const [name, setName] = useState("");
 
-  useEffect(()=>{
-    axios
-      .get("http://localhost:3001/persons")
-      .then(respons => {
-      setPersons(respons.data);
+  useEffect(() => {
+    personServices.getAll().then((initialPersons) => {
+      setPersons(initialPersons);
     });
-  });
+  }, []);
 
   const handleNameChange = (event) => {
     setNewName(event.target.value);
@@ -84,12 +82,13 @@ const App = () => {
     const newPerson = {
       name: newName,
       number: newNumber,
-      id: persons.length + 1,
     };
 
-    setPersons(persons.concat(newPerson));
-    setNewName("");
-    setNewNumber("");
+    personServices.create(newPerson).then((returnedPerson) => {
+      setPersons(persons.concat(returnedPerson));
+      setNewName("");
+      setNewNumber("");
+    });
   };
 
   const phonebook =
