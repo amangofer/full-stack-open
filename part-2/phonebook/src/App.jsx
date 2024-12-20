@@ -90,11 +90,25 @@ const App = () => {
   const handleDelete = (id) => {
     const person = persons.find((person) => person.id === id);
     if (confirm(`Delete ${person.name}`)) {
-      personServices.remove(id).then((returnedPerson) => {
-        const newPersons = persons.filter((person) => person.id !== id);
-        setPersons(newPersons);
-        console.log(returnedPerson);
-      });
+      personServices
+        .remove(id)
+        .then((returnedPerson) => {
+          const newPersons = persons.filter((person) => person.id !== id);
+          setPersons(newPersons);
+          console.log(returnedPerson);
+        })
+        .catch((error) => {
+          setNotification({
+            message: `Information of ${person.name} has already been removed from server`,
+            type: "error",
+          });
+          const newPersons = persons.filter((person) => person.id !== id);
+          setPersons(newPersons);
+
+          setTimeout(() => {
+            setNotification(null);
+          }, 5000);
+        });
     }
   };
 
