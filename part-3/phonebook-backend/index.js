@@ -60,9 +60,16 @@ app.post("/api/persons", (req, res) => {
     persons.length > 0 ? Math.max(...persons.map((p) => Number(p.id))) : 0;
   person.id = String(id + 1);
 
-  persons = persons.concat(person);
+  const duplcated = persons.filter((p) => p.name === person.name);
 
-  res.json(person);
+  if (!person.name || !person.number) {
+    res.status(400).json({ error: "data is missing eg: name or number" });
+  } else if (duplcated) {
+    res.status(403).json({ error: "name alrady taken, name must be unique" });
+  } else {
+    persons = persons.concat(person);
+    res.json(person);
+  }
 });
 
 const PORT = 3001;
