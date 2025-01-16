@@ -32,7 +32,7 @@ const PersonForm = ({
 const Person = ({ person, handleDelete }) => {
   return (
     <div>
-      {person.name} {person.number}
+      {person.name} {person.number}{" "}
       <button onClick={handleDelete}>Delete</button>
     </div>
   );
@@ -92,10 +92,9 @@ const App = () => {
     if (confirm(`Delete ${person.name}`)) {
       personServices
         .remove(id)
-        .then((returnedPerson) => {
+        .then(() => {
           const newPersons = persons.filter((person) => person.id !== id);
           setPersons(newPersons);
-          console.log(returnedPerson);
         })
         .catch((error) => {
           setNotification({
