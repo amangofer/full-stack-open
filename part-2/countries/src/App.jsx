@@ -1,10 +1,12 @@
 import axios from "axios";
 import { useEffect, useState } from "react";
-import CountryList from "./components/CountryList";
+import CountrisList from "./components/CountrisList";
+import CountryDetails from "./components/CountryDetails";
 
 function App() {
   const [countries, setCountries] = useState([]);
   const [filter, setFilter] = useState("");
+  const [showCountry, setShowCountry] = useState(null);
 
   useEffect(() => {
     axios
@@ -16,6 +18,11 @@ function App() {
 
   const handleFilter = (event) => {
     setFilter(event.target.value);
+    setShowCountry(null);
+  };
+
+  const handleShow = (country) => {
+    setShowCountry(country);
   };
 
   const filteredCountries = filter
@@ -27,7 +34,15 @@ function App() {
       <div>
         find countries <input onChange={handleFilter} />
       </div>
-      <CountryList list={filteredCountries} />
+      {showCountry ? (
+        <CountryDetails selected={showCountry} />
+      ) : filteredCountries.length === 1 ? (
+        <CountryDetails selected={filteredCountries[0]} />
+      ) : filteredCountries.length > 10 ? (
+        "Too many matches, spacify another filter"
+      ) : (
+        <CountrisList list={filteredCountries} handleShow={handleShow} />
+      )}
     </>
   );
 }

@@ -5,18 +5,23 @@ const CountryDetails = ({ selected }) => {
   const [country, setCountry] = useState(null);
 
   useEffect(() => {
-    axios
-      .get(`https://studies.cs.helsinki.fi/restcountries/api/name/${selected}`)
-      .then((res) => {
-        setCountry(res.data);
-      });
-  }, []);
+    const fetchData = () => {
+      axios
+        .get(
+          `https://studies.cs.helsinki.fi/restcountries/api/name/${selected}`
+        )
+        .then((res) => {
+          setCountry(res.data);
+        });
+    };
+    fetchData();
+  }, [selected]);
 
   if (country) {
     return (
       <>
         <h1>{country.name.common}</h1>
-        <p>capital {...country.capital}</p>
+        <p>capital {...country.capital || ""}</p>
         <p>area {country.area}</p>
         <h3>Languages</h3>
         <ul>
