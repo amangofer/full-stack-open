@@ -36,6 +36,8 @@ function App() {
       </div>
       {showCountry ? (
         <CountryDetails selected={showCountry} />
+      ) : filteredCountries.length === 0 ? (
+        "No such country on the list! try again."
       ) : filteredCountries.length === 1 ? (
         <CountryDetails selected={filteredCountries[0]} />
       ) : filteredCountries.length > 10 ? (
