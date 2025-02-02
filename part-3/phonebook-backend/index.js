@@ -1,6 +1,8 @@
+require("dotenv").config();
 const express = require("express");
 const morgan = require("morgan");
 const cors = require("cors");
+const Persons = require("./models/phonebook");
 
 morgan.token("body", function getId(req) {
   return JSON.stringify(req.body);
@@ -45,7 +47,13 @@ app.get("/info", (req, res) => {
 });
 
 app.get("/api/persons", (req, res) => {
-  res.json(persons);
+  Persons.find({})
+    .then((result) => {
+      res.json(result);
+    })
+    .catch((error) => {
+      res.status(500).end(error.message);
+    });
 });
 
 app.get("/api/persons/:id", (req, res) => {
@@ -67,18 +75,12 @@ app.delete("/api/persons/:id", (req, res) => {
 
 app.post("/api/persons", (req, res) => {
   const person = req.body;
-  const id =
-    persons.length > 0 ? Math.max(...persons.map((p) => Number(p.id))) : 0;
-  person.id = String(id + 1);
-
-  const duplcated = persons.filter((p) => p.name === person.name);
 
   if (!person.name || !person.number) {
     res.status(400).json({ error: "data is missing eg: name or number" });
-  } else if (duplcated.length > 0) {
-    res.status(403).json({ error: "name alrady taken, name must be unique" });
   } else {
     persons = persons.concat(person);
+    Persons.create(person);
     res.json(person);
   }
 });
