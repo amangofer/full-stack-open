@@ -16,6 +16,14 @@ app.use(
 app.use(cors());
 app.use(express.static("dist"));
 
+const errorHandler = (error, request, respons, next) =>{
+  if (error.name === 'CastError') {
+    return respons.status(400).send({ error: 'malformatted id' })
+  } 
+
+  next(error)
+}
+
 let persons = [
   {
     id: "1",
@@ -66,7 +74,7 @@ app.get("/api/persons/:id", (req, res) => {
   }
 });
 
-app.delete("/api/persons/:id", (req, res) => {
+app.delete("/api/persons/:id", (req, res, nexg) => {
   const id = req.params.id;
 
   Persons.findByIdAndDelete(id).then(result =>{
@@ -75,10 +83,7 @@ app.delete("/api/persons/:id", (req, res) => {
     }else {
       res.status(404).send({message: "Person not found!"})
     }
-  }).catch(error => {
-    console.log(error.message)
-    res.status(500).end();
-  })
+  }).catch(error => nexg(error))
 
 });
 
@@ -93,6 +98,8 @@ app.post("/api/persons", (req, res) => {
     res.json(person);
   }
 });
+
+app.use(errorHandler)
 
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {
