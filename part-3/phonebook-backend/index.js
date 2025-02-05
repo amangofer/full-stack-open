@@ -16,13 +16,17 @@ app.use(
 app.use(cors());
 app.use(express.static("dist"));
 
-const errorHandler = (error, request, respons, next) =>{
-  if (error.name === 'CastError') {
-    return respons.status(400).send({ error: 'malformatted id' })
-  } 
+const unknownEndpoint = (request, response) => {
+  response.status(404).send({ error: "unknown endpoint" });
+};
 
-  next(error)
-}
+const errorHandler = (error, request, respons, next) => {
+  if (error.name === "CastError") {
+    return respons.status(400).send({ error: "malformatted id" });
+  }
+
+  next(error);
+};
 
 let persons = [
   {
@@ -70,36 +74,52 @@ app.get("/api/persons/:id", (req, res) => {
   if (person) {
     res.json(person);
   } else {
-    res.status(404).end();
+    res.status(400).end();
   }
 });
 
-app.delete("/api/persons/:id", (req, res, nexg) => {
+app.delete("/api/persons/:id", (req, res, next) => {
   const id = req.params.id;
 
-  Persons.findByIdAndDelete(id).then(result =>{
-    if(result){
-      res.status(204).send({message: "Succussfully removed!"});
-    }else {
-      res.status(404).send({message: "Person not found!"})
-    }
-  }).catch(error => nexg(error))
-
+  Persons.findByIdAndDelete(id)
+    .then((result) => {
+      if (result) {
+        res.status(204).end();
+      } else {
+        res.status(400).send({ message: "Person not found!" });
+      }
+    })
+    .catch((error) => next(error));
 });
 
 app.post("/api/persons", (req, res) => {
   const person = req.body;
 
   if (!person.name || !person.number) {
-    res.status(400).json({ error: "data is missing eg: name or number" });
+    res.status(400).send({ error: "data is missing eg: name or number" });
   } else {
-    persons = persons.concat(person);
     Persons.create(person);
     res.json(person);
   }
 });
 
-app.use(errorHandler)
+app.put("/api/persons/:id", (req, res, next) => {
+  const id = req.params.id;
+  const person = req.body;
+
+  Persons.findByIdAndUpdate(id, person, { new: true })
+    .then((updatedPerson) => {
+      if (updatedPerson) {
+        res.json(updatedPerson);
+      } else {
+        res.status(400).send({ message: "Person not found!" });
+      }
+    })
+    .catch((error) => next(error));
+});
+
+app.use(unknownEndpoint);
+app.use(errorHandler);
 
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {
