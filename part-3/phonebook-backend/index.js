@@ -31,7 +31,6 @@ const errorHandler = (error, request, response, next) => {
 };
 
 app.get("/info", (req, res) => {
-  ear;
   Persons.find({}).then((result) => {
     const info = `<p>Phonebook has info for ${
       result.length
