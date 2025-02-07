@@ -23,8 +23,10 @@ if (process.argv.length >= 5) {
     number: number,
   });
 
-  person.save().then((result) => {
-    console.log(`added ${personName} number ${number} to phonebook`);
+  person.save().then((savedPerson) => {
+    console.log(
+      `added ${savedPerson.name} number ${savedPerson.number} to phonebook`
+    );
     mongoose.connection.close();
   });
 } else if (process.argv.length === 3) {
