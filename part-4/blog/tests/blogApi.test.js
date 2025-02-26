@@ -31,6 +31,12 @@ describe("Blog API test", () => {
   });
 });
 
+test("the unique identifier property of the blog posts is named id", async () => {
+  const response = await api.get("/api/blogs");
+
+  assert.strictEqual(response.body[0].hasOwnProperty("id"), true);
+});
+
 after(async () => {
   await mongoose.connection.close();
 });
