@@ -29,33 +29,52 @@ describe("Blog API test", () => {
 
     assert.strictEqual(response.body.length, helper.initialBlogs.length);
   });
-});
 
-test("the unique identifier property of the blog posts is named id", async () => {
-  const response = await api.get("/api/blogs");
+  test("the unique identifier property of the blog posts is named id", async () => {
+    const response = await api.get("/api/blogs");
 
-  assert.strictEqual(response.body[0].hasOwnProperty("id"), true);
-});
+    assert.strictEqual(response.body[0].hasOwnProperty("id"), true);
+  });
 
-test("addition of a new blog", async () => {
-  const newBlog = {
-    title: "Tools are not the Answer",
-    author: "Robert C. Martin",
-    url: "http://blog.cleancoder.com/uncle-bob/2017/10/04/CodeIsNotTheAnswer.html",
-    likes: 7,
-  };
+  test("addition of a new blog", async () => {
+    const newBlog = {
+      title: "Tools are not the Answer",
+      author: "Robert C. Martin",
+      url: "http://blog.cleancoder.com/uncle-bob/2017/10/04/CodeIsNotTheAnswer.html",
+      likes: 7,
+    };
 
-  await api
-    .post("/api/blogs")
-    .send(newBlog)
-    .expect(201)
-    .expect("Content-Type", /application\/json/);
+    await api
+      .post("/api/blogs")
+      .send(newBlog)
+      .expect(201)
+      .expect("Content-Type", /application\/json/);
 
-  const blogsAtEnd = await helper.blogsInDb();
-  assert.strictEqual(blogsAtEnd.length, helper.initialBlogs.length + 1);
+    const blogsAtEnd = await helper.blogsInDb();
+    assert.strictEqual(blogsAtEnd.length, helper.initialBlogs.length + 1);
 
-  const contents = blogsAtEnd.map((b) => b.title);
-  assert(contents.includes("Tools are not the Answer"));
+    const contents = blogsAtEnd.map((b) => b.title);
+    assert(contents.includes("Tools are not the Answer"));
+  });
+
+  test("if the like property is missing it will default to 0", async () => {
+    const newBlog = {
+      title: "Functional Classes in Clojure",
+      author: "Robert C. Martin",
+      url: "http://blog.cleancoder.com/uncle-bob/2023/01/19/functional-classes-clojure.html",
+    };
+
+    await api
+      .post("/api/blogs")
+      .send(newBlog)
+      .expect(201)
+      .expect("Content-Type", /application\/json/);
+
+    const blogsAtEnd = await helper.blogsInDb();
+    assert.strictEqual(blogsAtEnd.length, helper.initialBlogs.length + 1);
+
+    assert.strictEqual(blogsAtEnd[blogsAtEnd.length - 1].likes, 0);
+  });
 });
 
 after(async () => {
