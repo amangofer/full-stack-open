@@ -17,75 +17,136 @@ describe("Blog API test", () => {
     await Promise.all(promiseArray);
   });
 
-  test("blogs are returned as json", async () => {
-    await api
-      .get("/api/blogs")
-      .expect(200)
-      .expect("Content-Type", /application\/json/);
+  describe("when there are some blogs saved initially", () => {
+    test("blogs are returned as json", async () => {
+      await api
+        .get("/api/blogs")
+        .expect(200)
+        .expect("Content-Type", /application\/json/);
+    });
+
+    test("all blogs are return", async () => {
+      const response = await api.get("/api/blogs");
+
+      assert.strictEqual(response.body.length, helper.initialBlogs.length);
+    });
+
+    test("the unique identifier property of the blog posts is named id", async () => {
+      const response = await api.get("/api/blogs");
+
+      assert.strictEqual(response.body[0].hasOwnProperty("id"), true);
+      assert.strictEqual(response.body[0].hasOwnProperty("id"), true);
+    });
   });
 
-  test("all blogs are return", async () => {
-    const response = await api.get("/api/blogs");
+  describe("addition of a new blog", () => {
+    test("addition of a new blog", async () => {
+      const newBlog = {
+        title: "Tools are not the Answer",
+        author: "Robert C. Martin",
+        url: "http://blog.cleancoder.com/uncle-bob/2017/10/04/CodeIsNotTheAnswer.html",
+        likes: 7,
+      };
 
-    assert.strictEqual(response.body.length, helper.initialBlogs.length);
+      await api
+        .post("/api/blogs")
+        .send(newBlog)
+        .expect(201)
+        .expect("Content-Type", /application\/json/);
+
+      const blogsAtEnd = await helper.blogsInDb();
+      assert.strictEqual(blogsAtEnd.length, helper.initialBlogs.length + 1);
+
+      const contents = blogsAtEnd.map((b) => b.title);
+      assert(contents.includes("Tools are not the Answer"));
+    });
+
+    test("if the like property is missing it will default to 0", async () => {
+      const newBlog = {
+        title: "Functional Classes in Clojure",
+        author: "Robert C. Martin",
+        url: "http://blog.cleancoder.com/uncle-bob/2023/01/19/functional-classes-clojure.html",
+      };
+
+      await api
+        .post("/api/blogs")
+        .send(newBlog)
+        .expect(201)
+        .expect("Content-Type", /application\/json/);
+
+      const blogsAtEnd = await helper.blogsInDb();
+      assert.strictEqual(blogsAtEnd.length, helper.initialBlogs.length + 1);
+
+      assert.strictEqual(blogsAtEnd[blogsAtEnd.length - 1].likes, 0);
+    });
+
+    test("fails with status code 400 if data invalid", async () => {
+      const newBlog = {
+        author: "Robert C. Martin",
+        likes: 3,
+      };
+
+      await api.post("/api/blogs").send(newBlog).expect(400);
+
+      const blogsAtEnd = await helper.blogsInDb();
+      assert.strictEqual(blogsAtEnd.length, helper.initialBlogs.length);
+    });
   });
 
-  test("the unique identifier property of the blog posts is named id", async () => {
-    const response = await api.get("/api/blogs");
+  describe("deletion of blog", () => {
+    test("succeeds with status code 204 if id is valid", async () => {
+      const blogs = await helper.blogsInDb();
+      const blogToDelete = blogs[0];
 
-    assert.strictEqual(response.body[0].hasOwnProperty("id"), true);
+      await api.delete(`/api/blogs/${blogToDelete.id}`).expect(204);
+
+      const blogsAtEnd = await helper.blogsInDb();
+      assert.strictEqual(blogsAtEnd.length, helper.initialBlogs.length - 1);
+
+      const contents = blogsAtEnd.map((b) => b.title);
+      assert(!contents.includes(blogToDelete.title));
+    });
+
+    test("fails with status code 405 if id is invalid", async () => {
+      const wrongBlogId = "5a422bc61b54a676234d17c3";
+
+      await api.delete(`/api/blogs/${wrongBlogId}`).expect(404);
+
+      const blogsAtEnd = await helper.blogsInDb();
+      assert.strictEqual(blogsAtEnd.length, helper.initialBlogs.length);
+    });
   });
 
-  test("addition of a new blog", async () => {
-    const newBlog = {
-      title: "Tools are not the Answer",
-      author: "Robert C. Martin",
-      url: "http://blog.cleancoder.com/uncle-bob/2017/10/04/CodeIsNotTheAnswer.html",
-      likes: 7,
-    };
+  describe("updateing of blog", () => {
+    test("update succeeds with status code 204 if id is valid", async () => {
+      const blogs = await helper.blogsInDb();
+      const blogToUpdate = blogs[0];
 
-    await api
-      .post("/api/blogs")
-      .send(newBlog)
-      .expect(201)
-      .expect("Content-Type", /application\/json/);
+      blogToUpdate.likes = 8;
 
-    const blogsAtEnd = await helper.blogsInDb();
-    assert.strictEqual(blogsAtEnd.length, helper.initialBlogs.length + 1);
+      await api
+        .put(`/api/blogs/${blogToUpdate.id}`)
+        .send(blogToUpdate)
+        .expect(200);
+      const blogsAtEnd = await helper.blogsInDb();
+      assert.strictEqual(blogsAtEnd.length, helper.initialBlogs.length);
 
-    const contents = blogsAtEnd.map((b) => b.title);
-    assert(contents.includes("Tools are not the Answer"));
-  });
+      assert.strictEqual(blogsAtEnd[0].likes, blogToUpdate.likes);
+    });
 
-  test("if the like property is missing it will default to 0", async () => {
-    const newBlog = {
-      title: "Functional Classes in Clojure",
-      author: "Robert C. Martin",
-      url: "http://blog.cleancoder.com/uncle-bob/2023/01/19/functional-classes-clojure.html",
-    };
+    test("update fails with status code 404 if id is invalid", async () => {
+      const wrongId = "5a422a851b54b676234d17f7";
 
-    await api
-      .post("/api/blogs")
-      .send(newBlog)
-      .expect(201)
-      .expect("Content-Type", /application\/json/);
+      const blog = {
+        title: "React patterns",
+        author: "Michael Chan",
+        url: "https://reactpatterns.com/",
+        likes: 10,
+        id: "5a422a851b54b676234d17f7",
+      };
 
-    const blogsAtEnd = await helper.blogsInDb();
-    assert.strictEqual(blogsAtEnd.length, helper.initialBlogs.length + 1);
-
-    assert.strictEqual(blogsAtEnd[blogsAtEnd.length - 1].likes, 0);
-  });
-
-  test("fails with status code 400 if data invalid", async () => {
-    const newBlog = {
-      author: "Robert C. Martin",
-      likes: 3,
-    };
-
-    await api.post("/api/blogs").send(newBlog).expect(400);
-
-    const blogsAtEnd = await helper.blogsInDb();
-    assert.strictEqual(blogsAtEnd.length, helper.initialBlogs.length);
+      await api.put(`/api/blogs/${wrongId}`).send(blog).expect(404);
+    });
   });
 });
 

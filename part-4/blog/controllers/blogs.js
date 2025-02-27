@@ -20,4 +20,36 @@ blogsRouter.post("/", async (request, response) => {
   }
 });
 
+blogsRouter.delete("/:id", async (request, response) => {
+  const blogId = request.params.id;
+
+  const blog = await Blog.findById(blogId);
+  if (!blog) {
+    response.status(404).json({
+      status: "error",
+      message: "Document not found",
+    });
+  } else {
+    await Blog.findByIdAndDelete(blogId);
+    response.status(204).end();
+  }
+});
+
+blogsRouter.put("/:id", async (request, response) => {
+  const blogBody = request.body;
+  const blogId = request.params.id;
+
+  const updatedBlog = await Blog.findByIdAndUpdate(blogId, blogBody, {
+    new: true,
+  });
+  if (!updatedBlog) {
+    response.status(404).json({
+      status: "error",
+      message: "Document not found",
+    });
+  } else {
+    response.json(updatedBlog);
+  }
+});
+
 module.exports = blogsRouter;
