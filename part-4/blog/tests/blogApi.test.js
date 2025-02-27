@@ -75,6 +75,18 @@ describe("Blog API test", () => {
 
     assert.strictEqual(blogsAtEnd[blogsAtEnd.length - 1].likes, 0);
   });
+
+  test("fails with status code 400 if data invalid", async () => {
+    const newBlog = {
+      author: "Robert C. Martin",
+      likes: 3,
+    };
+
+    await api.post("/api/blogs").send(newBlog).expect(400);
+
+    const blogsAtEnd = await helper.blogsInDb();
+    assert.strictEqual(blogsAtEnd.length, helper.initialBlogs.length);
+  });
 });
 
 after(async () => {
