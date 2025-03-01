@@ -60,7 +60,7 @@ describe("Blog API test", () => {
     test("fails with statuscode 400 id is invalid", async () => {
       const id = "bsdn3bsb45345a54c454d";
 
-      //await api.get(`/api/blogs/${id}`).expect(400);
+      await api.get(`/api/blogs/${id}`).expect(400);
     });
   });
 
@@ -159,8 +159,14 @@ describe("Blog API test", () => {
       assert.strictEqual(blogsAtEnd[0].likes, blogToUpdate.likes);
     });
 
-    test("update fails with status code 404 if id is invalid", async () => {
-      const wrongId = "5a422a851b54b676234d17f7";
+    test("update fails with status code 404 if id does not exist", async () => {
+      const wrongId = await helper.nonExistingId();
+
+      await api.put(`/api/blogs/${wrongId}`).send({}).expect(404);
+    });
+
+    test("fails with statuscode 400 id is invalid", async () => {
+      const wrongId = "5a422a851b54b676234d1";
 
       const blog = {
         title: "React patterns",
@@ -170,7 +176,7 @@ describe("Blog API test", () => {
         id: "5a422a851b54b676234d17f7",
       };
 
-      await api.put(`/api/blogs/${wrongId}`).send(blog).expect(404);
+      await api.put(`/api/blogs/${wrongId}`).send(blog).expect(400);
     });
   });
 });
