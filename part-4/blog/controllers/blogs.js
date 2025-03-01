@@ -6,6 +6,21 @@ blogsRouter.get("/", async (request, response) => {
   response.json(blogs);
 });
 
+blogsRouter.get("/:id", async (request, response) => {
+  const id = request.params.id;
+
+  const blog = await Blog.findById(id);
+
+  if (blog) {
+    response.json(blog);
+  } else {
+    response.status(404).json({
+      status: "error",
+      message: "Document not found",
+    });
+  }
+});
+
 blogsRouter.post("/", async (request, response) => {
   const blog = new Blog(request.body);
   if (!blog.likes) {
@@ -23,14 +38,13 @@ blogsRouter.post("/", async (request, response) => {
 blogsRouter.delete("/:id", async (request, response) => {
   const blogId = request.params.id;
 
-  const blog = await Blog.findById(blogId);
+  const blog = await Blog.findByIdAndDelete(blogId);
   if (!blog) {
     response.status(404).json({
       status: "error",
       message: "Document not found",
     });
   } else {
-    await Blog.findByIdAndDelete(blogId);
     response.status(204).end();
   }
 });

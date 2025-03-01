@@ -35,7 +35,32 @@ describe("Blog API test", () => {
       const response = await api.get("/api/blogs");
 
       assert.strictEqual(response.body[0].hasOwnProperty("id"), true);
-      assert.strictEqual(response.body[0].hasOwnProperty("id"), true);
+      assert.strictEqual(response.body[0].hasOwnProperty("_id"), false);
+    });
+  });
+
+  describe("viewing a specific note", () => {
+    test("succeeds with a valid id", async () => {
+      const blogs = await helper.blogsInDb();
+      const blog = blogs[0];
+
+      const response = await api
+        .get(`/api/blogs/${blog.id}`)
+        .expect(200)
+        .expect("Content-Type", /application\/json/);
+
+      assert.deepStrictEqual(blog, response.body);
+    });
+
+    test("fails with statuscode 404 if note does not exist", async () => {
+      const id = await helper.nonExistingId();
+
+      await api.get(`/api/blogs/${id}`).expect(404);
+    });
+    test("fails with statuscode 400 id is invalid", async () => {
+      const id = "bsdn3bsb45345a54c454d";
+
+      //await api.get(`/api/blogs/${id}`).expect(400);
     });
   });
 
@@ -80,7 +105,7 @@ describe("Blog API test", () => {
       assert.strictEqual(blogsAtEnd[blogsAtEnd.length - 1].likes, 0);
     });
 
-    test("fails with status code 400 if data invalid", async () => {
+    test("addition fails with status code 400 if data invalid", async () => {
       const newBlog = {
         author: "Robert C. Martin",
         likes: 3,
@@ -94,7 +119,7 @@ describe("Blog API test", () => {
   });
 
   describe("deletion of blog", () => {
-    test("succeeds with status code 204 if id is valid", async () => {
+    test("deletion succeeds with status code 204 if id is valid", async () => {
       const blogs = await helper.blogsInDb();
       const blogToDelete = blogs[0];
 
@@ -107,7 +132,7 @@ describe("Blog API test", () => {
       assert(!contents.includes(blogToDelete.title));
     });
 
-    test("fails with status code 405 if id is invalid", async () => {
+    test("deletion fails with status code 405 if id is invalid", async () => {
       const wrongBlogId = "5a422bc61b54a676234d17c3";
 
       await api.delete(`/api/blogs/${wrongBlogId}`).expect(404);
