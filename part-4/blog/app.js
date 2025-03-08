@@ -16,7 +16,9 @@ logger.info("connecting to", config.MONGODB_URI);
 
 mongoose.connect(config.MONGODB_URI);
 
-app.use(morgan("dev"));
+if (!process.env.NODE_ENV === "test") {
+  app.use(morgan("dev"));
+}
 app.use(cors());
 app.use(express.json());
 app.use("/api/blogs", blogsRouter);
