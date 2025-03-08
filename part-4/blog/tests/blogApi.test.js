@@ -7,6 +7,7 @@ const helper = require("./test_helper");
 
 const api = supertest(app);
 const Blog = require("../models/blog");
+const User = require("../models/user");
 
 describe("Blog API test", () => {
   beforeEach(async () => {
@@ -65,12 +66,14 @@ describe("Blog API test", () => {
   });
 
   describe("addition of a new blog", () => {
-    test("addition of a new blog", async () => {
+    test.only("addition of a new blog", async () => {
+      const user = await User.find({});
       const newBlog = {
         title: "Tools are not the Answer",
         author: "Robert C. Martin",
         url: "http://blog.cleancoder.com/uncle-bob/2017/10/04/CodeIsNotTheAnswer.html",
         likes: 7,
+        userId: user[0].id.toString(),
       };
 
       await api
@@ -86,11 +89,13 @@ describe("Blog API test", () => {
       assert(contents.includes("Tools are not the Answer"));
     });
 
-    test("if the like property is missing it will default to 0", async () => {
+    test.only("if the like property is missing it will default to 0", async () => {
+      const user = await User.find({});
       const newBlog = {
         title: "Functional Classes in Clojure",
         author: "Robert C. Martin",
         url: "http://blog.cleancoder.com/uncle-bob/2023/01/19/functional-classes-clojure.html",
+        userId: user[0].id.toString(),
       };
 
       await api
@@ -105,10 +110,12 @@ describe("Blog API test", () => {
       assert.strictEqual(blogsAtEnd[blogsAtEnd.length - 1].likes, 0);
     });
 
-    test("addition fails with status code 400 if data invalid", async () => {
+    test.only("addition fails with status code 400 if data invalid", async () => {
+      const user = await User.find({});
       const newBlog = {
         author: "Robert C. Martin",
         likes: 3,
+        userId: user[0].id,
       };
 
       await api.post("/api/blogs").send(newBlog).expect(400);
