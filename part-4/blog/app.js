@@ -9,6 +9,7 @@ const middleware = require("./utils/middleware");
 const logger = require("./utils/logger");
 const mongoose = require("mongoose");
 const morgan = require("morgan");
+const loginRouter = require("./controllers/login");
 
 mongoose.set("strictQuery", false);
 
@@ -21,6 +22,7 @@ if (!process.env.NODE_ENV === "test") {
 }
 app.use(cors());
 app.use(express.json());
+app.use("/login", loginRouter);
 app.use("/api/blogs", blogsRouter);
 app.use("/api/users", usersRouter);
 
