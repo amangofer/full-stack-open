@@ -26,38 +26,34 @@ blogsRouter.get("/:id", async (request, response) => {
 blogsRouter.post("/", async (request, response) => {
   const body = request.body;
 
-  const decodedToken = jwt.verify(request.token, process.env.SECRET);
-  if (!decodedToken.id) {
-    return response.status(401).json({ error: "token invalid" });
-  }
+  const user = await User.findById(request.user.id);
+  if (user) {
+    const blog = new Blog({
+      title: body.title,
+      url: body.url,
+      author: body.author,
+      likes: body.likes || 0,
+      user: user.id,
+    });
 
-  const user = await User.findById(decodedToken.id);
-
-  const blog = new Blog({
-    title: body.title,
-    url: body.url,
-    author: body.author,
-    likes: body.likes || 0,
-    user: user.id,
-  });
-
-  if (!blog.title || !blog.author) {
-    response.status(400).end();
+    if (!blog.title || !blog.author) {
+      response.status(400).end();
+    } else {
+      const savedBlog = await blog.save();
+      user.blogs = user.blogs.concat(savedBlog._id);
+      await user.save();
+      response.status(201).json(savedBlog);
+    }
   } else {
-    const savedBlog = await blog.save();
-    user.blogs = user.blogs.concat(savedBlog._id);
-    await user.save();
-    response.status(201).json(savedBlog);
+    response.status(404).json({
+      status: "error",
+      message: "User not found",
+    });
   }
 });
 
 blogsRouter.delete("/:id", async (request, response) => {
   const blogId = request.params.id;
-
-  const decodedToken = jwt.verify(request.token, process.env.SECRET);
-  if (!decodedToken.id) {
-    return response.status(401).json({ error: "token invalid" });
-  }
 
   const blog = await Blog.findById(blogId);
   if (!blog) {
@@ -65,9 +61,12 @@ blogsRouter.delete("/:id", async (request, response) => {
       status: "error",
       message: "Document not found",
     });
-  } else if (blog.user.toString() === decodedToken.id.toString()) {
+  } else if (blog.user.toString() === request.user.id.toString()) {
     await Blog.findByIdAndDelete(blogId);
+
     response.status(204).end();
+  } else {
+    response.status(403).end();
   }
 });
 
