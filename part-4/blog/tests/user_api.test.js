@@ -31,7 +31,6 @@ describe("User API test", () => {
 
       assert.strictEqual(newUser.username, users[0].username);
     });
-
     test.only("trying to create a user with invalid username returns 400", async () => {
       const newUser = {
         username: "am",
@@ -41,7 +40,6 @@ describe("User API test", () => {
 
       await api.post("/api/users").send(newUser).expect(400);
     });
-
     test.only("trying to create a user with invalid password returns 400", async () => {
       const newUser = {
         username: "aman",

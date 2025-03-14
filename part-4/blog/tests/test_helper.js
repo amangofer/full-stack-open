@@ -60,7 +60,7 @@ const nonExistingId = async () => {
 };
 
 const blogsInDb = async () => {
-  const blog = await Blog.find({});
+  const blog = await Blog.find({}).populate("user", { username: 1, name: 1 });
   return blog.map((note) => note.toJSON());
 };
 

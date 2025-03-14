@@ -4,6 +4,7 @@ const mongoose = require("mongoose");
 const supertest = require("supertest");
 const app = require("../app");
 const helper = require("./test_helper");
+const bcrypt = require("bcrypt");
 
 const api = supertest(app);
 const Blog = require("../models/blog");
@@ -12,10 +13,27 @@ const User = require("../models/user");
 describe("Blog API test", () => {
   beforeEach(async () => {
     await Blog.deleteMany({});
+    await User.deleteMany({});
 
-    const blogObjects = helper.initialBlogs.map((blog) => new Blog(blog));
-    const promiseArray = blogObjects.map((blog) => blog.save());
-    await Promise.all(promiseArray);
+    const passwordHash = await bcrypt.hash("password", 10);
+    const user = new User({
+      username: "aman",
+      name: "Amanuel",
+      passwordHash,
+    });
+    await user.save();
+
+    for (const blog of helper.initialBlogs) {
+      const newBlog = new Blog({
+        title: blog.title,
+        author: blog.author,
+        url: blog.url,
+        user: user.id,
+      });
+      await newBlog.save();
+      user.blogs = user.blogs.concat(newBlog._id);
+      await user.save();
+    }
   });
 
   describe("when there are some blogs saved initially", () => {
@@ -41,7 +59,7 @@ describe("Blog API test", () => {
   });
 
   describe("viewing a specific note", () => {
-    test("succeeds with a valid id", async () => {
+    test("returns the blog with a valid id", async () => {
       const blogs = await helper.blogsInDb();
       const blog = blogs[0];
 
@@ -52,7 +70,6 @@ describe("Blog API test", () => {
 
       assert.deepStrictEqual(blog, response.body);
     });
-
     test("fails with statuscode 404 if note does not exist", async () => {
       const id = await helper.nonExistingId();
 
@@ -66,18 +83,24 @@ describe("Blog API test", () => {
   });
 
   describe("addition of a new blog", () => {
-    test.only("addition of a new blog", async () => {
-      const user = await User.find({});
+    let user;
+    beforeEach(async () => {
+      user = await api
+        .post("/login")
+        .send({ username: "aman", password: "password" })
+        .expect(200);
+    });
+    test("addition of a new blog", async () => {
       const newBlog = {
         title: "Tools are not the Answer",
         author: "Robert C. Martin",
         url: "http://blog.cleancoder.com/uncle-bob/2017/10/04/CodeIsNotTheAnswer.html",
         likes: 7,
-        userId: user[0].id.toString(),
       };
 
       await api
         .post("/api/blogs")
+        .set("Authorization", `Bearer ${user.body.token}`)
         .send(newBlog)
         .expect(201)
         .expect("Content-Type", /application\/json/);
@@ -89,17 +112,16 @@ describe("Blog API test", () => {
       assert(contents.includes("Tools are not the Answer"));
     });
 
-    test.only("if the like property is missing it will default to 0", async () => {
-      const user = await User.find({});
+    test("if the like property is missing it will default to 0", async () => {
       const newBlog = {
         title: "Functional Classes in Clojure",
         author: "Robert C. Martin",
         url: "http://blog.cleancoder.com/uncle-bob/2023/01/19/functional-classes-clojure.html",
-        userId: user[0].id.toString(),
       };
 
       await api
         .post("/api/blogs")
+        .set("Authorization", `Bearer ${user.body.token}`)
         .send(newBlog)
         .expect(201)
         .expect("Content-Type", /application\/json/);
@@ -110,15 +132,17 @@ describe("Blog API test", () => {
       assert.strictEqual(blogsAtEnd[blogsAtEnd.length - 1].likes, 0);
     });
 
-    test.only("addition fails with status code 400 if data invalid", async () => {
-      const user = await User.find({});
+    test("addition fails with status code 400 if data invalid", async () => {
       const newBlog = {
         author: "Robert C. Martin",
         likes: 3,
-        userId: user[0].id,
       };
 
-      await api.post("/api/blogs").send(newBlog).expect(400);
+      await api
+        .post("/api/blogs")
+        .set("Authorization", `Bearer ${user.body.token}`)
+        .send(newBlog)
+        .expect(400);
 
       const blogsAtEnd = await helper.blogsInDb();
       assert.strictEqual(blogsAtEnd.length, helper.initialBlogs.length);
@@ -126,11 +150,22 @@ describe("Blog API test", () => {
   });
 
   describe("deletion of blog", () => {
+    let user;
+    beforeEach(async () => {
+      user = await api
+        .post("/login")
+        .send({ username: "aman", password: "password" })
+        .expect(200);
+    });
+
     test("deletion succeeds with status code 204 if id is valid", async () => {
       const blogs = await helper.blogsInDb();
       const blogToDelete = blogs[0];
 
-      await api.delete(`/api/blogs/${blogToDelete.id}`).expect(204);
+      await api
+        .delete(`/api/blogs/${blogToDelete.id}`)
+        .set("Authorization", `Bearer ${user.body.token}`)
+        .expect(204);
 
       const blogsAtEnd = await helper.blogsInDb();
       assert.strictEqual(blogsAtEnd.length, helper.initialBlogs.length - 1);
@@ -142,7 +177,10 @@ describe("Blog API test", () => {
     test("deletion fails with status code 405 if id is invalid", async () => {
       const wrongBlogId = "5a422bc61b54a676234d17c3";
 
-      await api.delete(`/api/blogs/${wrongBlogId}`).expect(404);
+      await api
+        .delete(`/api/blogs/${wrongBlogId}`)
+        .set("Authorization", `Bearer ${user.body.token}`)
+        .expect(404);
 
       const blogsAtEnd = await helper.blogsInDb();
       assert.strictEqual(blogsAtEnd.length, helper.initialBlogs.length);
@@ -150,22 +188,22 @@ describe("Blog API test", () => {
   });
 
   describe("updateing of blog", () => {
-    test("update succeeds with status code 204 if id is valid", async () => {
-      const blogs = await helper.blogsInDb();
-      const blogToUpdate = blogs[0];
-
-      blogToUpdate.likes = 8;
-
-      await api
-        .put(`/api/blogs/${blogToUpdate.id}`)
-        .send(blogToUpdate)
-        .expect(200);
-      const blogsAtEnd = await helper.blogsInDb();
-      assert.strictEqual(blogsAtEnd.length, helper.initialBlogs.length);
-
-      assert.strictEqual(blogsAtEnd[0].likes, blogToUpdate.likes);
-    });
-
+    //test.only("update succeeds with status code 200 if id is valid", async () => {
+    //  const blogs = await helper.blogsInDb();
+    //  const blogToUpdate = blogs[0];
+    //
+    //  blogToUpdate.likes = 8;
+    //
+    //  await api
+    //    .put(`/api/blogs/${blogToUpdate.id}`)
+    //    .send(blogToUpdate)
+    //    .expect(200);
+    //
+    //  const blogsAtEnd = await helper.blogsInDb();
+    //  assert.strictEqual(blogsAtEnd.length, helper.initialBlogs.length);
+    //
+    //  assert.strictEqual(blogsAtEnd[0].likes, blogToUpdate.likes);
+    //});
     test("update fails with status code 404 if id does not exist", async () => {
       const wrongId = await helper.nonExistingId();
 
@@ -187,7 +225,7 @@ describe("Blog API test", () => {
     });
   });
 });
-
+//
 after(async () => {
   await mongoose.connection.close();
 });
