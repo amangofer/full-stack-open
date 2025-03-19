@@ -14,7 +14,7 @@ describe("User API test", () => {
   });
 
   describe("Create user", () => {
-    test.only("create a user with all valid input", async () => {
+    test("create a user with all valid input", async () => {
       const newUser = {
         username: "aman",
         name: "amanuel",
@@ -31,7 +31,7 @@ describe("User API test", () => {
 
       assert.strictEqual(newUser.username, users[0].username);
     });
-    test.only("trying to create a user with invalid username returns 400", async () => {
+    test("trying to create a user with invalid username returns 400", async () => {
       const newUser = {
         username: "am",
         name: "amanuel",
@@ -40,7 +40,7 @@ describe("User API test", () => {
 
       await api.post("/api/users").send(newUser).expect(400);
     });
-    test.only("trying to create a user with invalid password returns 400", async () => {
+    test("trying to create a user with invalid password returns 400", async () => {
       const newUser = {
         username: "aman",
         name: "amanuel",
@@ -50,10 +50,10 @@ describe("User API test", () => {
       await api.post("/api/users").send(newUser).expect(400);
     });
 
-    test.only("trying to create a user with existing username returns 400", async () => {
+    test("trying to create a user with existing username returns 400", async () => {
       const newUser = {
-        username: "aman",
-        name: "amanuel",
+        username: "user1",
+        name: "test user",
         password: "password",
       };
 
@@ -63,7 +63,11 @@ describe("User API test", () => {
         .expect(201)
         .expect("Content-Type", /application\/json/);
 
-      await api.post("/api/users").send(newUser).expect(400);
+      await api
+        .post("/api/users")
+        .send(newUser)
+        .expect(400)
+        .expect("Content-Type", /application\/json/);
     });
   });
 });

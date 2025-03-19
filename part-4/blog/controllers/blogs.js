@@ -1,7 +1,5 @@
 const blogsRouter = require("express").Router();
-const jwt = require("jsonwebtoken");
 const Blog = require("../models/blog");
-const User = require("../models/user");
 
 blogsRouter.get("/", async (request, response) => {
   const blogs = await Blog.find({}).populate("user", { username: 1, name: 1 });
@@ -71,18 +69,26 @@ blogsRouter.delete("/:id", async (request, response) => {
 });
 
 blogsRouter.put("/:id", async (request, response) => {
-  const blogBody = request.body;
   const blogId = request.params.id;
+  const blogBody = request.body;
+  const blog = await Blog.findById(blogId);
 
-  const updatedBlog = await Blog.findByIdAndUpdate(blogId, blogBody, {
-    new: true,
-  });
-  if (!updatedBlog) {
-    response.status(404).json({
+  if (!blog) {
+    return response.status(404).json({
       error: "Document not found",
     });
-  } else {
-    response.json(updatedBlog);
+  }
+
+  if (!request.user) {
+    return response.status(401).json({ error: "token missing or invalid" });
+  }
+
+  if (blog.user.toString() === request.user.id.toString()) {
+    const res = await Blog.findByIdAndUpdate(blogId, blogBody, {
+      new: true,
+    });
+
+    response.status(201).json(res);
   }
 });
 

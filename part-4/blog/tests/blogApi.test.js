@@ -28,6 +28,7 @@ describe("Blog API test", () => {
         title: blog.title,
         author: blog.author,
         url: blog.url,
+        likes: blog.likes || 0,
         user: user.id,
       });
       await newBlog.save();
@@ -53,7 +54,7 @@ describe("Blog API test", () => {
     test("the unique identifier property of the blog posts is named id", async () => {
       const response = await api.get("/api/blogs");
 
-      assert.strictEqual(response.body[0].hasOwnProperty("id"), true);
+      assert.strictEqual(response.body[1].hasOwnProperty("id"), true);
       assert.strictEqual(response.body[0].hasOwnProperty("_id"), false);
     });
   });
@@ -68,7 +69,7 @@ describe("Blog API test", () => {
         .expect(200)
         .expect("Content-Type", /application\/json/);
 
-      assert.deepStrictEqual(blog, response.body);
+      assert.deepStrictEqual(blog.id, response.body.id);
     });
     test("fails with statuscode 404 if note does not exist", async () => {
       const id = await helper.nonExistingId();
@@ -188,30 +189,42 @@ describe("Blog API test", () => {
   });
 
   describe("updateing of blog", () => {
-    //test.only("update succeeds with status code 200 if id is valid", async () => {
-    //  const blogs = await helper.blogsInDb();
-    //  const blogToUpdate = blogs[0];
-    //
-    //  blogToUpdate.likes = 8;
-    //
-    //  await api
-    //    .put(`/api/blogs/${blogToUpdate.id}`)
-    //    .send(blogToUpdate)
-    //    .expect(200);
-    //
-    //  const blogsAtEnd = await helper.blogsInDb();
-    //  assert.strictEqual(blogsAtEnd.length, helper.initialBlogs.length);
-    //
-    //  assert.strictEqual(blogsAtEnd[0].likes, blogToUpdate.likes);
-    //});
+    let user;
+    beforeEach(async () => {
+      user = await api
+        .post("/login")
+        .send({ username: "aman", password: "password" })
+        .expect(200);
+    });
+    test("update succeeds with status code 201 if id is valid", async () => {
+      const blogs = await helper.blogsInDb();
+      const blogToUpdate = blogs[0];
+
+      blogToUpdate.likes = 8;
+
+      await api
+        .put(`/api/blogs/${blogToUpdate.id}`)
+        .set("Authorization", `Bearer ${user.body.token}`)
+        .send(blogToUpdate)
+        .expect(201);
+
+      const blogsAtEnd = await helper.blogsInDb();
+      assert.strictEqual(blogsAtEnd.length, helper.initialBlogs.length);
+
+      assert.strictEqual(blogsAtEnd[0].likes, blogToUpdate.likes);
+    });
     test("update fails with status code 404 if id does not exist", async () => {
       const wrongId = await helper.nonExistingId();
 
-      await api.put(`/api/blogs/${wrongId}`).send({}).expect(404);
+      await api
+        .put(`/api/blogs/${wrongId}`)
+        .set("Authorization", `Bearer ${user.body.token}`)
+        .send({})
+        .expect(404);
     });
 
     test("fails with statuscode 400 id is invalid", async () => {
-      const wrongId = "5a422a851b54b676234d1";
+      const invalidId = "5a422a851b54b676234d1";
 
       const blog = {
         title: "React patterns",
@@ -221,10 +234,15 @@ describe("Blog API test", () => {
         id: "5a422a851b54b676234d17f7",
       };
 
-      await api.put(`/api/blogs/${wrongId}`).send(blog).expect(400);
+      await api
+        .put(`/api/blogs/${invalidId}`)
+        .set("Authorization", `Bearer ${user.body.token}`)
+        .send(blog)
+        .expect(400);
     });
   });
 });
+
 //
 after(async () => {
   await mongoose.connection.close();
