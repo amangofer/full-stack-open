@@ -1,4 +1,4 @@
-const { test, after, beforeEach, describe } = require("node:test");
+const { test, after, beforeEach, afterEach, describe } = require("node:test");
 const assert = require("node:assert");
 const mongoose = require("mongoose");
 const supertest = require("supertest");
@@ -36,6 +36,10 @@ describe("Blog API test", () => {
       await user.save();
     }
   });
+  afterEach(async () => {
+    await Blog.deleteMany({})
+    await User.deleteMany({})
+  })
 
   describe("when there are some blogs saved initially", () => {
     test("blogs are returned as json", async () => {
@@ -54,7 +58,7 @@ describe("Blog API test", () => {
     test("the unique identifier property of the blog posts is named id", async () => {
       const response = await api.get("/api/blogs");
 
-      assert.strictEqual(response.body[1].hasOwnProperty("id"), true);
+      assert.strictEqual(response.body[0].hasOwnProperty("id"), true);
       assert.strictEqual(response.body[0].hasOwnProperty("_id"), false);
     });
   });
@@ -243,7 +247,74 @@ describe("Blog API test", () => {
   });
 });
 
-//
+describe("User API test", () => {
+  beforeEach(async () => {
+    await User.deleteMany({});
+  });
+  afterEach(async () => {
+    await User.deleteMany({});
+  });
+
+  describe("Create user", () => {
+    test("create a user with all valid input", async () => {
+      const newUser = {
+        username: "aman",
+        name: "amanuel",
+        password: "password",
+      };
+
+      await api
+        .post("/api/users")
+        .send(newUser)
+        .expect(201)
+        .expect("Content-Type", /application\/json/);
+
+      const users = await helper.usersInDb();
+
+      assert.strictEqual(newUser.username, users[0].username);
+    });
+    test("trying to create a user with invalid username returns 400", async () => {
+      const newUser = {
+        username: "am",
+        name: "amanuel",
+        password: "password",
+      };
+
+      await api.post("/api/users").send(newUser).expect(400);
+    });
+    test("trying to create a user with invalid password returns 400", async () => {
+      const newUser = {
+        username: "aman",
+        name: "amanuel",
+        password: "pa",
+      };
+
+      await api.post("/api/users").send(newUser).expect(400);
+    });
+
+    test("trying to create a user with existing username returns 400", async () => {
+      const newUser = {
+        username: "user1",
+        name: "test user",
+        password: "password",
+      };
+
+      await api
+        .post("/api/users")
+        .send(newUser)
+        .expect(201)
+        .expect("Content-Type", /application\/json/);
+
+      await api
+        .post("/api/users")
+        .send(newUser)
+        .expect(400)
+        .expect("Content-Type", /application\/json/);
+    });
+  });
+});
+
+
 after(async () => {
   await mongoose.connection.close();
 });
