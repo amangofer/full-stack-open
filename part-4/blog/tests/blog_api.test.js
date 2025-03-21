@@ -15,12 +15,9 @@ describe("Blog API test", () => {
     await Blog.deleteMany({});
     await User.deleteMany({});
 
-    const passwordHash = await bcrypt.hash("password", 10);
-    const user = new User({
-      username: "aman",
-      name: "Amanuel",
-      passwordHash,
-    });
+    const { username, name, password } = helper.loginUser;
+    const passwordHash = await bcrypt.hash(password, 10);
+    const user = new User({ username, name, passwordHash });
     await user.save();
 
     for (const blog of helper.initialBlogs) {
@@ -36,10 +33,11 @@ describe("Blog API test", () => {
       await user.save();
     }
   });
+
   afterEach(async () => {
-    await Blog.deleteMany({})
-    await User.deleteMany({})
-  })
+    await Blog.deleteMany({});
+    await User.deleteMany({});
+  });
 
   describe("when there are some blogs saved initially", () => {
     test("blogs are returned as json", async () => {
@@ -90,23 +88,13 @@ describe("Blog API test", () => {
   describe("addition of a new blog", () => {
     let user;
     beforeEach(async () => {
-      user = await api
-        .post("/login")
-        .send({ username: "aman", password: "password" })
-        .expect(200);
+      user = await api.post("/login").send(helper.loginUser).expect(200);
     });
     test("addition of a new blog", async () => {
-      const newBlog = {
-        title: "Tools are not the Answer",
-        author: "Robert C. Martin",
-        url: "http://blog.cleancoder.com/uncle-bob/2017/10/04/CodeIsNotTheAnswer.html",
-        likes: 7,
-      };
-
       await api
         .post("/api/blogs")
         .set("Authorization", `Bearer ${user.body.token}`)
-        .send(newBlog)
+        .send(helper.newBlog)
         .expect(201)
         .expect("Content-Type", /application\/json/);
 
@@ -118,35 +106,34 @@ describe("Blog API test", () => {
     });
 
     test("if the like property is missing it will default to 0", async () => {
-      const newBlog = {
-        title: "Functional Classes in Clojure",
-        author: "Robert C. Martin",
-        url: "http://blog.cleancoder.com/uncle-bob/2023/01/19/functional-classes-clojure.html",
-      };
-
-      await api
+      const newBlog = await api
         .post("/api/blogs")
         .set("Authorization", `Bearer ${user.body.token}`)
-        .send(newBlog)
+        .send(helper.blogWithOutLikes)
         .expect(201)
         .expect("Content-Type", /application\/json/);
 
       const blogsAtEnd = await helper.blogsInDb();
       assert.strictEqual(blogsAtEnd.length, helper.initialBlogs.length + 1);
-
-      assert.strictEqual(blogsAtEnd[blogsAtEnd.length - 1].likes, 0);
+      assert.strictEqual(newBlog.body.likes, 0);
     });
 
-    test("addition fails with status code 400 if data invalid", async () => {
-      const newBlog = {
-        author: "Robert C. Martin",
-        likes: 3,
-      };
-
+    test("should fail with status code 400 if title property is missing", async () => {
       await api
         .post("/api/blogs")
         .set("Authorization", `Bearer ${user.body.token}`)
-        .send(newBlog)
+        .send(helper.blogWithOutTitle)
+        .expect(400);
+
+      const blogsAtEnd = await helper.blogsInDb();
+      assert.strictEqual(blogsAtEnd.length, helper.initialBlogs.length);
+    });
+
+    test("should fail with status code 400 if url property is missing", async () => {
+      await api
+        .post("/api/blogs")
+        .set("Authorization", `Bearer ${user.body.token}`)
+        .send(helper.blogWithOutUrl)
         .expect(400);
 
       const blogsAtEnd = await helper.blogsInDb();
@@ -157,10 +144,7 @@ describe("Blog API test", () => {
   describe("deletion of blog", () => {
     let user;
     beforeEach(async () => {
-      user = await api
-        .post("/login")
-        .send({ username: "aman", password: "password" })
-        .expect(200);
+      user = await api.post("/login").send(helper.loginUser).expect(200);
     });
 
     test("deletion succeeds with status code 204 if id is valid", async () => {
@@ -179,7 +163,7 @@ describe("Blog API test", () => {
       assert(!contents.includes(blogToDelete.title));
     });
 
-    test("deletion fails with status code 405 if id is invalid", async () => {
+    test("deletion fails with status code 404 if id is invalid", async () => {
       const wrongBlogId = "5a422bc61b54a676234d17c3";
 
       await api
@@ -195,10 +179,7 @@ describe("Blog API test", () => {
   describe("updateing of blog", () => {
     let user;
     beforeEach(async () => {
-      user = await api
-        .post("/login")
-        .send({ username: "aman", password: "password" })
-        .expect(200);
+      user = await api.post("/login").send(helper.loginUser).expect(200);
     });
     test("update succeeds with status code 201 if id is valid", async () => {
       const blogs = await helper.blogsInDb();
@@ -247,73 +228,68 @@ describe("Blog API test", () => {
   });
 });
 
-describe("User API test", () => {
+describe("User API Test", () => {
   beforeEach(async () => {
     await User.deleteMany({});
-  });
-  afterEach(async () => {
-    await User.deleteMany({});
+
+    for (const user of helper.initialUsers) {
+      const { username, name, password } = user;
+      const passwordHash = await bcrypt.hash(password, 10);
+
+      const newUser = new User({
+        username,
+        name,
+        passwordHash,
+      });
+      await newUser.save();
+    }
   });
 
   describe("Create user", () => {
     test("create a user with all valid input", async () => {
-      const newUser = {
-        username: "aman",
-        name: "amanuel",
-        password: "password",
-      };
-
+      const usersAtStart = await helper.usersInDb();
       await api
         .post("/api/users")
-        .send(newUser)
+        .send(helper.newUser)
         .expect(201)
         .expect("Content-Type", /application\/json/);
 
-      const users = await helper.usersInDb();
+      const usersAtEnd = await helper.usersInDb();
 
-      assert.strictEqual(newUser.username, users[0].username);
-    });
-    test("trying to create a user with invalid username returns 400", async () => {
-      const newUser = {
-        username: "am",
-        name: "amanuel",
-        password: "password",
-      };
-
-      await api.post("/api/users").send(newUser).expect(400);
-    });
-    test("trying to create a user with invalid password returns 400", async () => {
-      const newUser = {
-        username: "aman",
-        name: "amanuel",
-        password: "pa",
-      };
-
-      await api.post("/api/users").send(newUser).expect(400);
+      assert.strictEqual(usersAtEnd.length, usersAtStart.length + 1);
     });
 
-    test("trying to create a user with existing username returns 400", async () => {
-      const newUser = {
-        username: "user1",
-        name: "test user",
-        password: "password",
-      };
-
+    test("should fail with status 400 if the username is too short", async () => {
       await api
         .post("/api/users")
-        .send(newUser)
-        .expect(201)
-        .expect("Content-Type", /application\/json/);
+        .send(helper.userWithTooShortUsername)
+        .expect(400);
+    });
 
+    test("should fail with status 400 if the username is missing", async () => {
+      await api.post("/api/users").send(helper.userWithOutUsername).expect(400);
+    });
+
+    test("should fail with status 400 if the password is too short", async () => {
       await api
         .post("/api/users")
-        .send(newUser)
+        .send(helper.userWithTooShortPassword)
+        .expect(400);
+    });
+
+    test("should fail with status 400 if the password is missing", async () => {
+      await api.post("/api/users").send(helper.userWithOutPassword).expect(400);
+    });
+
+    test("should fail with status 400 if username is not unique", async () => {
+      await api
+        .post("/api/users")
+        .send(helper.notUniqueUser)
         .expect(400)
         .expect("Content-Type", /application\/json/);
     });
   });
 });
-
 
 after(async () => {
   await mongoose.connection.close();
