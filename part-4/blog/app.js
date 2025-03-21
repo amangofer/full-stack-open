@@ -5,7 +5,7 @@ require("express-async-errors");
 const cors = require("cors");
 const blogsRouter = require("./controllers/blogs");
 const usersRouter = require("./controllers/users");
-const middleware = require("./utils/middleware");
+const {unknownEndpoint, errorHandler,tokenExtractor, userExtractor} = require("./utils/middleware");
 const logger = require("./utils/logger");
 const mongoose = require("mongoose");
 const morgan = require("morgan");
@@ -29,12 +29,12 @@ if (!(process.env.NODE_ENV === "test")) {
 }
 app.use(cors());
 app.use(express.json());
-app.use(middleware.tokenExtractor);
+app.use(tokenExtractor);
 app.use("/login", loginRouter);
-app.use("/api/blogs", middleware.userExtractor, blogsRouter);
+app.use("/api/blogs", userExtractor, blogsRouter);
 app.use("/api/users", usersRouter);
 
-app.use(middleware.unknownEndpoint);
-app.use(middleware.errorHandler);
+app.use(unknownEndpoint);
+app.use(errorHandler);
 
 module.exports = app;

@@ -24,43 +24,42 @@ blogsRouter.get("/:id", async (request, response) => {
 });
 
 blogsRouter.post("/", async (request, response) => {
-  const body = request.body;
+  const {title, url, author, likes} = request.body;
   const user = request.user;
 
   if (!user) {
     return response.status(401).json({ error: "token missing or invalid" });
   }
   const blog = new Blog({
-    title: body.title,
-    url: body.url,
-    author: body.author,
-    likes: body.likes || 0,
+    title,
+    url,
+    author,
+    likes: likes || 0,
     user: user.id,
   });
 
-  if (!blog.title || !blog.author) {
-    response.status(400).end();
-  } else {
-    const savedBlog = await blog.save();
-    user.blogs = user.blogs.concat(savedBlog._id);
-    await user.save();
-    response.status(201).json(savedBlog);
+  if (!title || !url) {
+    return response.status(400).json({ error: "title or url is missing"});
   }
+    
+  const savedBlog = await blog.save();
+  user.blogs = user.blogs.concat(savedBlog._id);
+  await user.save();
+  response.status(201).json(savedBlog);
 });
 
 blogsRouter.delete("/:id", async (request, response) => {
-  const blogId = request.params.id;
 
   if (!request.user) {
     return response.status(401).json({ error: "token missing or invalid" });
   }
-  const blog = await Blog.findById(blogId);
+  const blog = await Blog.findById(request.params.id);
   if (!blog) {
     response.status(404).json({
       error: "Document not found",
     });
   } else if (blog.user.toString() === request.user.id.toString()) {
-    await Blog.findByIdAndDelete(blogId);
+    await Blog.findByIdAndDelete(request.params.id);
 
     response.status(204).end();
   } else {
@@ -84,11 +83,11 @@ blogsRouter.put("/:id", async (request, response) => {
   }
 
   if (blog.user.toString() === request.user.id.toString()) {
-    const res = await Blog.findByIdAndUpdate(blogId, blogBody, {
+    const updatedBlog = await Blog.findByIdAndUpdate(blogId, blogBody, {
       new: true,
-    });
+    }).populate("user",{username: 1, name: 1} );
 
-    response.status(201).json(res);
+    response.status(201).json(updatedBlog);
   }
 });
 
