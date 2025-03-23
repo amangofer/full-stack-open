@@ -1,56 +1,47 @@
-const { test, after, beforeEach, afterEach, describe } = require("node:test");
-const assert = require("node:assert");
-const mongoose = require("mongoose");
 const supertest = require("supertest");
+const mongoose = require("mongoose");
+const { test, describe, after, beforeEach } = require("node:test");
 const app = require("../app");
-const helper = require("./test_helper");
-const bcrypt = require("bcrypt");
-
 const api = supertest(app);
+const helper = require("./test_helper");
+const assert = require("assert");
+
 const Blog = require("../models/blog");
 const User = require("../models/user");
 
-describe("Blog API test", () => {
+describe("Blog API Test", () => {
+  let user;
   beforeEach(async () => {
     await Blog.deleteMany({});
     await User.deleteMany({});
 
-    const { username, name, password } = helper.loginUser;
-    const passwordHash = await bcrypt.hash(password, 10);
-    const user = new User({ username, name, passwordHash });
-    await user.save();
+    await api.post("/api/users").send(helper.loginUser);
+    user = await api.post("/login").send(helper.loginUser);
 
-    for (const blog of helper.initialBlogs) {
-      const newBlog = new Blog({
-        title: blog.title,
-        author: blog.author,
-        url: blog.url,
-        likes: blog.likes || 0,
-        user: user.id,
-      });
-      await newBlog.save();
-      user.blogs = user.blogs.concat(newBlog._id);
-      await user.save();
-    }
+    const blogObjects = helper.initialBlogs.map((blog) => {
+      blog.user = user.body.id;
+      return new Blog(blog);
+    });
+
+    const promiseArray = blogObjects.map((blog) => blog.save());
+    await Promise.all(promiseArray);
   });
 
-  afterEach(async () => {
-    await Blog.deleteMany({});
-    await User.deleteMany({});
-  });
-
-  describe("when there are some blogs saved initially", () => {
+  describe("when there is initially some blogs saved", () => {
     test("blogs are returned as json", async () => {
-      await api
+      const response = await api
         .get("/api/blogs")
         .expect(200)
         .expect("Content-Type", /application\/json/);
-    });
-
-    test("all blogs are return", async () => {
-      const response = await api.get("/api/blogs");
 
       assert.strictEqual(response.body.length, helper.initialBlogs.length);
+    });
+
+    test("blogs are returned with id property", async () => {
+      const response = await api.get("/api/blogs");
+      response.body.forEach((blog) => {
+        assert(blog.id);
+      });
     });
 
     test("the unique identifier property of the blog posts is named id", async () => {
@@ -85,11 +76,7 @@ describe("Blog API test", () => {
     });
   });
 
-  describe("addition of a new blog", () => {
-    let user;
-    beforeEach(async () => {
-      user = await api.post("/login").send(helper.loginUser).expect(200);
-    });
+  describe("addition of a new blog", async () => {
     test("addition of a new blog", async () => {
       await api
         .post("/api/blogs")
@@ -142,11 +129,6 @@ describe("Blog API test", () => {
   });
 
   describe("deletion of blog", () => {
-    let user;
-    beforeEach(async () => {
-      user = await api.post("/login").send(helper.loginUser).expect(200);
-    });
-
     test("deletion succeeds with status code 204 if id is valid", async () => {
       const blogs = await helper.blogsInDb();
       const blogToDelete = blogs[0];
@@ -177,10 +159,6 @@ describe("Blog API test", () => {
   });
 
   describe("updateing of blog", () => {
-    let user;
-    beforeEach(async () => {
-      user = await api.post("/login").send(helper.loginUser).expect(200);
-    });
     test("update succeeds with status code 201 if id is valid", async () => {
       const blogs = await helper.blogsInDb();
       const blogToUpdate = blogs[0];
@@ -189,7 +167,6 @@ describe("Blog API test", () => {
 
       await api
         .put(`/api/blogs/${blogToUpdate.id}`)
-        .set("Authorization", `Bearer ${user.body.token}`)
         .send(blogToUpdate)
         .expect(201);
 
@@ -201,11 +178,7 @@ describe("Blog API test", () => {
     test("update fails with status code 404 if id does not exist", async () => {
       const wrongId = await helper.nonExistingId();
 
-      await api
-        .put(`/api/blogs/${wrongId}`)
-        .set("Authorization", `Bearer ${user.body.token}`)
-        .send({})
-        .expect(404);
+      await api.put(`/api/blogs/${wrongId}`).send({}).expect(404);
     });
 
     test("fails with statuscode 400 id is invalid", async () => {
@@ -233,64 +206,56 @@ describe("User API Test", () => {
     await User.deleteMany({});
 
     for (const user of helper.initialUsers) {
-      const { username, name, password } = user;
-      const passwordHash = await bcrypt.hash(password, 10);
-
-      const newUser = new User({
-        username,
-        name,
-        passwordHash,
-      });
-      await newUser.save();
+      await api.post("/api/users").send(user);
     }
   });
 
-  describe("Create user", () => {
-    test("create a user with all valid input", async () => {
-      const usersAtStart = await helper.usersInDb();
-      await api
-        .post("/api/users")
-        .send(helper.newUser)
-        .expect(201)
-        .expect("Content-Type", /application\/json/);
+  test("create a user with all valid input", async () => {
+    const usersAtStart = await helper.usersInDb();
+    await api
+      .post("/api/users")
+      .send(helper.newUser)
+      .expect(201)
+      .expect("Content-Type", /application\/json/);
 
-      const usersAtEnd = await helper.usersInDb();
+    const usersAtEnd = await helper.usersInDb();
 
-      assert.strictEqual(usersAtEnd.length, usersAtStart.length + 1);
-    });
-
-    test("should fail with status 400 if the username is too short", async () => {
-      await api
-        .post("/api/users")
-        .send(helper.userWithTooShortUsername)
-        .expect(400);
-    });
-
-    test("should fail with status 400 if the username is missing", async () => {
-      await api.post("/api/users").send(helper.userWithOutUsername).expect(400);
-    });
-
-    test("should fail with status 400 if the password is too short", async () => {
-      await api
-        .post("/api/users")
-        .send(helper.userWithTooShortPassword)
-        .expect(400);
-    });
-
-    test("should fail with status 400 if the password is missing", async () => {
-      await api.post("/api/users").send(helper.userWithOutPassword).expect(400);
-    });
-
-    test("should fail with status 400 if username is not unique", async () => {
-      await api
-        .post("/api/users")
-        .send(helper.notUniqueUser)
-        .expect(400)
-        .expect("Content-Type", /application\/json/);
-    });
+    assert.strictEqual(usersAtEnd.length, usersAtStart.length + 1);
   });
-});
 
-after(async () => {
-  await mongoose.connection.close();
+  test("should fail with status 400 if the username is too short", async () => {
+    await api
+      .post("/api/users")
+      .send(helper.userWithTooShortUsername)
+      .expect(400);
+  });
+
+  test("should fail with status 400 if the username is missing", async () => {
+    await api.post("/api/users").send(helper.userWithOutUsername).expect(400);
+  });
+
+  test("should fail with status 400 if the password is too short", async () => {
+    await api
+      .post("/api/users")
+      .send(helper.userWithTooShortPassword)
+      .expect(400);
+  });
+
+  test("should fail with status 400 if the password is missing", async () => {
+    await api.post("/api/users").send(helper.userWithOutPassword).expect(400);
+  });
+
+  test("should fail with status 400 if username is not unique", async () => {
+    await api.post("/api/users").send(helper.notUniqueUser).expect(201);
+    const usersAtStart = await helper.usersInDb();
+
+    await api.post("/api/users").send(helper.notUniqueUser).expect(400);
+    const usersAtEnd = await helper.usersInDb();
+
+    assert.strictEqual(usersAtEnd.length, usersAtStart.length);
+  });
+
+  after(async () => {
+    await mongoose.connection.close();
+  });
 });

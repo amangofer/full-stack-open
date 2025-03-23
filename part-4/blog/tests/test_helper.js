@@ -53,28 +53,27 @@ const initialBlogs = [
 ];
 
 const newBlog = {
-        title: "Tools are not the Answer",
-        author: "Robert C. Martin",
-        url: "http://blog.cleancoder.com/uncle-bob/2017/10/04/CodeIsNotTheAnswer.html",
-        likes: 7,
+  title: "Tools are not the Answer",
+  author: "Robert C. Martin",
+  url: "http://blog.cleancoder.com/uncle-bob/2017/10/04/CodeIsNotTheAnswer.html",
+  likes: 7,
 };
-const blogWithOutLikes =   {
-        title: "Tools are not the Answer",
-        author: "Robert C. Martin",
-        url: "http://blog.cleancoder.com/uncle-bob/2017/10/04/CodeIsNotTheAnswer.html",
-      };
+const blogWithOutLikes = {
+  title: "Tools are not the Answer",
+  author: "Robert C. Martin",
+  url: "http://blog.cleancoder.com/uncle-bob/2017/10/04/CodeIsNotTheAnswer.html",
+};
 const blogWithOutTitle = {
-        author: "Robert C. Martin",
-        url: "http://blog.cleancoder.com/uncle-bob/2017/10/04/CodeIsNotTheAnswer.html",
-        likes: 7,
-};
- 
-const blogWithOutUrl = {
-        title: "Tools are not the Answer",
-        author: "Robert C. Martin",
-        likes: 7,
+  author: "Robert C. Martin",
+  url: "http://blog.cleancoder.com/uncle-bob/2017/10/04/CodeIsNotTheAnswer.html",
+  likes: 7,
 };
 
+const blogWithOutUrl = {
+  title: "Tools are not the Answer",
+  author: "Robert C. Martin",
+  likes: 7,
+};
 
 const nonExistingId = async () => {
   const blog = new Blog({ id: "6a822bc55c34a676234d5b4b3" });
@@ -93,54 +92,50 @@ const initialUsers = [
   {
     username: "user",
     name: "user 1",
-    password: "password"
+    password: "password",
   },
   {
     username: "user2",
     name: "user 2",
-    password: "password"
+    password: "password",
   },
 ];
 
 const loginUser = {
-    username: "user",
-    password: "password"
-  } 
+  username: "user",
+  password: "password",
+};
 
 const newUser = {
-    username: "user3",
-    name: "user 3", 
-    password: "password"
-  }
+  username: "user3",
+  name: "user 3",
+  password: "password",
+};
 
 const notUniqueUser = {
-    username: "user",
-    name: "user 1",
-    password: "password"
-  }
+  username: "user4",
+  name: "user 4",
+  password: "password",
+};
 const userWithOutUsername = {
   name: "user 4",
-  password: 'password'
-}
+  password: "password",
+};
 
 const userWithTooShortUsername = {
-  username: 'u4',
+  username: "u4",
   name: "user 4",
-  password: 'password'
-}
+  password: "password",
+};
 
 const userWithOutPassword = {
-  username: 'user4'
-}
+  username: "user4",
+};
 
 const userWithTooShortPassword = {
-  username: 'user5',
-  password: 'pa'
-}
-
-
-
-
+  username: "user5",
+  password: "pa",
+};
 
 const usersInDb = async () => {
   const users = await User.find({});

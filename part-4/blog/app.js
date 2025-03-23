@@ -5,16 +5,16 @@ require("express-async-errors");
 const cors = require("cors");
 const blogsRouter = require("./controllers/blogs");
 const usersRouter = require("./controllers/users");
+const loginRouter = require("./controllers/login");
+const logger = require("./utils/logger");
 const {
   unknownEndpoint,
   errorHandler,
   tokenExtractor,
   userExtractor,
 } = require("./utils/middleware");
-const logger = require("./utils/logger");
 const mongoose = require("mongoose");
 const morgan = require("morgan");
-const loginRouter = require("./controllers/login");
 
 mongoose.set("strictQuery", false);
 
