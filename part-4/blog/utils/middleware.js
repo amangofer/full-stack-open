@@ -10,25 +10,30 @@ const requestLogger = (request, response, next) => {
   next();
 };
 
-const tokenExtractor = (request, response, next) => {
+const tokenExtractor = (request) => {
   const authorization = request.get("authorization");
   if (authorization && authorization.startsWith("Bearer ")) {
-    request.token = authorization.replace("Bearer ", "");
-  } else {
-    request.token = null;
+    return authorization.replace("Bearer ", "");
   }
-  next();
+  return null;
 };
 
 const userExtractor = async (request, response, next) => {
-  if (request.token) {
-    const decodedToken = jwt.verify(request.token, process.env.SECRET);
-    if (!decodedToken.id) {
-      request.user = null;
-    } else {
-      request.user = await User.findById(decodedToken.id);
-    }
+  const token = tokenExtractor(request);
+  if (!token) {
+    return response.status(401).json({ error: "token missing" });
   }
+  const decodedToken = jwt.verify(token, process.env.SECRET);
+  if (!decodedToken.id) {
+    return response.status(401).json({ error: "token invalid" });
+  }
+  const user = await User.findById(decodedToken.id);
+
+  if (!user) {
+    return response.status(401).json({ error: "user not found" });
+  }
+  request.user = user;
+
   next();
 };
 
@@ -60,6 +65,5 @@ module.exports = {
   requestLogger,
   unknownEndpoint,
   errorHandler,
-  tokenExtractor,
   userExtractor,
 };
