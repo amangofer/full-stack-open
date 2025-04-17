@@ -1,6 +1,8 @@
 import { useState, useEffect } from "react";
 import Blog from "./components/Blog";
+import Notification from "./components/Notification";
 import blogService from "./services/blogs";
+import { jwtDecode } from "./services/helper";
 
 const App = () => {
   const [blogs, setBlogs] = useState([]);
@@ -10,15 +12,24 @@ const App = () => {
   const [title, setTitle] = useState("");
   const [author, setAuthor] = useState("");
   const [url, setUrl] = useState("");
+  const [errorMessage, setErrorMessage] = useState(null);
+  const [successMessage, setSuccessMessage] = useState(null);
 
   useEffect(() => {
     blogService.getAll().then((blogs) => setBlogs(blogs));
-  }, [blogs]);
+  }, []);
 
   useEffect(() => {
     const loggedUserJSON = window.localStorage.getItem("loggedNoteappUser");
     if (loggedUserJSON) {
       const user = JSON.parse(loggedUserJSON);
+      const decoded = jwtDecode(user.token);
+      if (!decoded.exp || Date.now() >= decoded.exp * 1000) {
+        setUser(null);
+        blogService.setToken("");
+        window.localStorage.removeItem("loggedNoteappUser");
+        return;
+      }
       setUser(user);
       blogService.setToken(user.token);
     }
@@ -35,7 +46,10 @@ const App = () => {
       setUsername("");
       setPassword("");
     } catch (e) {
-      console.log("wrong username or password");
+      setErrorMessage(e.response.data.error);
+      setTimeout(() => {
+        setErrorMessage(null);
+      }, 5000);
     }
   };
 
@@ -53,9 +67,22 @@ const App = () => {
       url,
     };
     try {
-      await blogService.createBlog(newBlog);
+      const savedBlog = await blogService.createBlog(newBlog);
+      setBlogs(blogs.concat(savedBlog));
+      setTitle("");
+      setAuthor("");
+      setUrl("");
+      setSuccessMessage(
+        `a new blog ${newBlog.title} by ${newBlog.author} added`,
+      );
+      setTimeout(() => {
+        setSuccessMessage(null);
+      }, 5000);
     } catch (e) {
-      console.log("blog not created");
+      setErrorMessage(e.response.data.error);
+      setTimeout(() => {
+        setErrorMessage(null);
+      }, 5000);
     }
   };
 
@@ -63,6 +90,7 @@ const App = () => {
     return (
       <div>
         <h2>login to application</h2>
+        <Notification status="error" message={errorMessage} />
         <form action="#" onSubmit={handleLogin}>
           <div>
             <label htmlFor="username">Username:</label>
@@ -90,6 +118,8 @@ const App = () => {
   return (
     <div>
       <h2>blogs</h2>
+      <Notification status="error" message={errorMessage} />
+      <Notification status="success" message={successMessage} />
       <p>
         {user.name} logged in
         <button onClick={handleLogout}>Logout</button>
