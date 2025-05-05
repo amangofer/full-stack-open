@@ -76,6 +76,26 @@ const App = () => {
     }
   };
 
+  const handleLike = async (blog) => {
+    const updatedBlog = {
+      id: blog.id,
+      title: blog.title,
+      url: blog.url,
+      author: blog.author,
+      likes: blog.likes + 1,
+      user: blog.user.id,
+    };
+
+    try {
+      await blogService.updateBlog(updatedBlog);
+    } catch (e) {
+      setErrorMessage(e.response.data.error);
+      setTimeout(() => {
+        setErrorMessage(null);
+      }, 5000);
+    }
+  };
+
   if (user === null) {
     return (
       <div>
@@ -118,7 +138,7 @@ const App = () => {
         <BlogForm handleSubmit={createNewBlog} />
       </Togglable>
       {blogs.map((blog) => (
-        <Blog key={blog.id} blog={blog} />
+        <Blog key={blog.id} blog={blog} handleLike={handleLike} />
       ))}
     </div>
   );
