@@ -87,7 +87,8 @@ const App = () => {
     };
 
     try {
-      await blogService.updateBlog(updatedBlog);
+      const updated = await blogService.updateBlog(updatedBlog);
+      setBlogs(blogs.map(blog=>blog.id === updated.id ? updated:blog))
     } catch (e) {
       setErrorMessage(e.response.data.error);
       setTimeout(() => {
