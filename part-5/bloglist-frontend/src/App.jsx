@@ -5,6 +5,7 @@ import blogService from "./services/blogs";
 import { jwtDecode } from "./services/helper";
 import BlogForm from "./components/BlogForm";
 import Togglable from "./components/Togglable";
+import axios from "axios";
 
 const App = () => {
   const [blogs, setBlogs] = useState([]);
@@ -88,7 +89,21 @@ const App = () => {
 
     try {
       const updated = await blogService.updateBlog(updatedBlog);
-      setBlogs(blogs.map(blog=>blog.id === updated.id ? updated:blog))
+      setBlogs(blogs.map((blog) => (blog.id === updated.id ? updated : blog)));
+    } catch (e) {
+      setErrorMessage(e.response.data.error);
+      setTimeout(() => {
+        setErrorMessage(null);
+      }, 5000);
+    }
+  };
+
+  const handleRemove = async (removedBlog) => {
+    try {
+      if (window.confirm(`Remove blog ${removedBlog.title} by ${removedBlog.author}`)) {
+        await blogService.deleteBlog(removedBlog);
+        setBlogs(blogs.filter((blog) => blog.id !== removedBlog.id));
+      }
     } catch (e) {
       setErrorMessage(e.response.data.error);
       setTimeout(() => {
@@ -138,9 +153,16 @@ const App = () => {
       <Togglable buttonLabel="New Blog">
         <BlogForm handleSubmit={createNewBlog} />
       </Togglable>
-      {blogs.sort((a, b)=>b.likes-a.likes).map((blog) => (
-        <Blog key={blog.id} blog={blog} handleLike={handleLike} />
-      ))}
+      {blogs
+        .sort((a, b) => b.likes - a.likes)
+        .map((blog) => (
+          <Blog
+            key={blog.id}
+            blog={blog}
+            handleLike={handleLike}
+            handleRemove={handleRemove}
+          />
+        ))}
     </div>
   );
 };
