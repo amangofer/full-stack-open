@@ -1,6 +1,7 @@
 import { render, screen } from "@testing-library/react";
+import userEvent from "@testing-library/user-event";
 import Blog from "./Blog";
-import { describe } from "vitest";
+import { describe, expect } from "vitest";
 
 describe("Blog Component", () => {
   const blog = {
@@ -29,5 +30,19 @@ describe("Blog Component", () => {
 
     const likes = container.querySelector(".blog-likes");
     expect(likes).toBe(null);
+  });
+
+  test("renders url and number of likes", async () => {
+    render(<Blog blog={blog} />);
+
+    const button = screen.getByRole("button", { name: /view/i });
+
+    await userEvent.click(button);
+
+    const likes = screen.getByText(`likes ${blog.likes}`);
+    expect(likes).toBeDefined();
+
+    const url = screen.getByText(blog.url);
+    expect(url).toBeDefined();
   });
 });
