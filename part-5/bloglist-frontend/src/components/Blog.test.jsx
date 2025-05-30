@@ -36,7 +36,6 @@ describe("Blog Component", () => {
     render(<Blog blog={blog} />);
 
     const button = screen.getByRole("button", { name: /view/i });
-
     await userEvent.click(button);
 
     const likes = screen.getByText(`likes ${blog.likes}`);
@@ -44,5 +43,20 @@ describe("Blog Component", () => {
 
     const url = screen.getByText(blog.url);
     expect(url).toBeDefined();
+  });
+
+  test("like button works", async () => {
+    const likeHandler = vi.fn();
+    render(<Blog blog={blog} handleLike={likeHandler} />);
+
+    const button = screen.getByRole("button", { name: /view/i });
+    await userEvent.click(button);
+
+    const user = userEvent.setup();
+    const like = screen.getByRole("button", { name: /like/i });
+    await user.click(like);
+    await user.click(like);
+
+    expect(likeHandler.mock.calls).toHaveLength(2);
   });
 });
