@@ -3,7 +3,7 @@ import userEvent from "@testing-library/user-event";
 import Blog from "./Blog";
 import { describe, expect } from "vitest";
 
-describe("Blog Component", () => {
+describe("Blog Component Test", () => {
   const blog = {
     title: "Component testing is done with react-testing-library",
     author: "user",
