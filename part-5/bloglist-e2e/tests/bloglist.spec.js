@@ -84,6 +84,20 @@ describe("Blog App", () => {
 
         await expect(blogDiv.getByText("likes 1")).toBeVisible();
       });
+
+      test("blog can be deleted", async ({ page }) => {
+        // await page.getByRole("button", { name: "Logout" }).click();
+        // await loginWith(page, "mluukkai", "salainen");
+        page.on("dialog", (dialog) => dialog.accept());
+        const blogText = page.getByText("New Blog Matti Luukkainen");
+        const blogDiv = blogText.locator("..");
+        await blogDiv.getByRole("button", { name: "view" }).click();
+        await expect(
+          page.getByRole("button", { name: "remove" }),
+        ).toBeVisible();
+        await blogDiv.getByRole("button", { name: "remove" }).click();
+        await expect(page.getByText("New Blog Matti Luukkainen")).toBeVisible();
+      });
     });
   });
 });
