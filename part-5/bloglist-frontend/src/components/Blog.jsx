@@ -1,6 +1,7 @@
+import PropTypes from "prop-types";
 import { useState } from "react";
 
-const Blog = ({ blog, handleLike, handleRemove }) => {
+const Blog = ({ user, blog, handleLike, handleRemove }) => {
   const [visible, setVisible] = useState(false);
 
   const blogStyle = {
@@ -31,21 +32,36 @@ const Blog = ({ blog, handleLike, handleRemove }) => {
       </div>
       {visible && (
         <div>
-          <p className="blog-url">{blog.url}</p>
-          <small className="blog-likes">likes {blog.likes}</small>
-          <button
-            onClick={() => {
-              onLike(blog);
-            }}
-          >
-            like
-          </button>
-          <p>{blog.user?.name}</p>
-          <button onClick={() => onRemove(blog)}>remove</button>
+          <a className="blog-url" href={blog.url}>
+            {blog.url}
+          </a>
+          <div>
+            <small className="blog-likes">likes {blog.likes}</small>
+            <button
+              onClick={() => {
+                onLike(blog);
+              }}
+            >
+              like
+            </button>
+          </div>
+          <p>{blog.user.name}</p>
+          {blog.user.username === user.username && (
+            <button className="removebtn" onClick={() => onRemove(blog)}>
+              remove
+            </button>
+          )}
         </div>
       )}
     </div>
   );
+};
+
+Blog.propTypes = {
+  blog: PropTypes.object.isRequired,
+  user: PropTypes.object,
+  addLike: PropTypes.func,
+  removeBlog: PropTypes.func,
 };
 
 export default Blog;

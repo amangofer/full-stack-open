@@ -11,6 +11,13 @@ describe("Blog App", () => {
         password: "salainen",
       },
     });
+    await request.post("http://localhost:3001/api/users", {
+      data: {
+        name: "Amanuel Haile",
+        username: "aman",
+        password: "password",
+      },
+    });
 
     await page.goto("http://localhost:5173");
   });
@@ -67,7 +74,7 @@ describe("Blog App", () => {
       const blog2 = {
         title: "New Blog 2",
         author: "Matti Luukkainen",
-        url: "http://example.blog/1",
+        url: "http://example.blog/2",
       };
 
       beforeEach(async ({ page }) => {
@@ -85,18 +92,30 @@ describe("Blog App", () => {
         await expect(blogDiv.getByText("likes 1")).toBeVisible();
       });
 
-      test("blog can be deleted", async ({ page }) => {
-        // await page.getByRole("button", { name: "Logout" }).click();
-        // await loginWith(page, "mluukkai", "salainen");
+      test("blog can be deleted by the owner", async ({ page }) => {
         page.on("dialog", (dialog) => dialog.accept());
         const blogText = page.getByText("New Blog Matti Luukkainen");
         const blogDiv = blogText.locator("..");
         await blogDiv.getByRole("button", { name: "view" }).click();
+
         await expect(
           page.getByRole("button", { name: "remove" }),
         ).toBeVisible();
         await blogDiv.getByRole("button", { name: "remove" }).click();
-        await expect(page.getByText("New Blog Matti Luukkainen")).toBeVisible();
+        await expect(
+          page.getByText("New Blog Matti Luukkainen"),
+        ).not.toBeVisible();
+      });
+
+      test("can't delete a blog of diffrent user", async ({ page }) => {
+        await page.getByRole("button", { name: "Logout" }).click();
+        await loginWith(page, "aman", "password");
+        const blogText = page.getByText("New Blog 2 Matti Luukkainen");
+        const blogDiv = blogText.locator("..");
+        await blogDiv.getByRole("button", { name: "view" }).click();
+        await expect(
+          page.getByRole("button", { name: "remove" }),
+        ).not.toBeVisible();
       });
     });
   });

@@ -1,10 +1,10 @@
-import { useState, useEffect } from "react";
-import Blog from "./components/Blog";
+import { useState, useEffect, useRef } from "react";
 import Notification from "./components/Notification";
 import blogService from "./services/blogs";
 import { jwtDecode } from "./services/helper";
 import BlogForm from "./components/BlogForm";
 import Togglable from "./components/Togglable";
+import BlogList from "./components/BlogList";
 
 const App = () => {
   const [blogs, setBlogs] = useState([]);
@@ -13,9 +13,26 @@ const App = () => {
   const [user, setUser] = useState(null);
   const [errorMessage, setErrorMessage] = useState(null);
   const [successMessage, setSuccessMessage] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  const blogFormRef = useRef();
 
   useEffect(() => {
-    blogService.getAll().then((blogs) => setBlogs(blogs));
+    const fetch= async ()=>{
+    // await blogService.getAll().then((blogs) => setBlogs(blogs));
+      try{
+      const data = await blogService.getAll()
+      setBlogs(data)
+      }catch(e){
+        setErrorMessage(e.response.data.error);
+        setTimeout(() => {
+          setErrorMessage(null);
+      }, 5000);
+      }finally{
+        setLoading(false)
+      }
+    }
+    fetch()
   }, []);
 
   useEffect(() => {
@@ -60,6 +77,7 @@ const App = () => {
 
   const createNewBlog = async (newBlog) => {
     try {
+      blogFormRef.current.toggleVisibility();
       const savedBlog = await blogService.createBlog(newBlog);
       setBlogs(blogs.concat(savedBlog));
       setSuccessMessage(
@@ -78,17 +96,14 @@ const App = () => {
 
   const handleLike = async (blog) => {
     const updatedBlog = {
-      id: blog.id,
-      title: blog.title,
-      url: blog.url,
-      author: blog.author,
+      ...blog,
       likes: blog.likes + 1,
       user: blog.user.id,
     };
 
     try {
       const updated = await blogService.updateBlog(updatedBlog);
-      setBlogs(blogs.map((blog) => (blog.id === updated.id ? updated : blog)));
+      setBlogs(blogs.map((b) => (b.id === updated.id ? updated : b)));
     } catch (e) {
       setErrorMessage(e.response.data.error);
       setTimeout(() => {
@@ -114,6 +129,10 @@ const App = () => {
       }, 5000);
     }
   };
+
+if(loading){
+    return <p>Lodding...</p>
+  }
 
   if (user === null) {
     return (
@@ -155,19 +174,15 @@ const App = () => {
         {user.name} logged in
         <button onClick={handleLogout}>Logout</button>
       </p>
-      <Togglable buttonLabel="New Blog">
+      <Togglable buttonLabel="New Blog" ref={blogFormRef}>
         <BlogForm handleSubmit={createNewBlog} />
       </Togglable>
-      {blogs
-        .sort((a, b) => b.likes - a.likes)
-        .map((blog) => (
-          <Blog
-            key={blog.id}
-            blog={blog}
-            handleLike={handleLike}
-            handleRemove={handleRemove}
-          />
-        ))}
+      <BlogList
+        user={user}
+        blogs={blogs}
+        handleLike={handleLike}
+        handleRemove={handleRemove}
+      />
     </div>
   );
 };
