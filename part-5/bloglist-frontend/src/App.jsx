@@ -19,7 +19,6 @@ const App = () => {
 
   useEffect(() => {
     const fetch= async ()=>{
-    // await blogService.getAll().then((blogs) => setBlogs(blogs));
       try{
       const data = await blogService.getAll()
       setBlogs(data)
