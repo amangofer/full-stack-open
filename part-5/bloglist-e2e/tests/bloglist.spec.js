@@ -1,5 +1,5 @@
 const { test, expect, beforeEach, describe } = require("@playwright/test");
-const { loginWith, createBlog } = require("./helper");
+const { loginWith, createBlog, likeBlog } = require("./helper");
 
 describe("Blog App", () => {
   beforeEach(async ({ page, request }) => {
@@ -116,6 +116,42 @@ describe("Blog App", () => {
         await expect(
           page.getByRole("button", { name: "remove" }),
         ).not.toBeVisible();
+      });
+
+      test("blogs are arranged in the order according to the likes", async ({
+        page,
+      }) => {
+        const blog3 = {
+          title: "New Blog 3",
+          author: "Amanuel Haile",
+          url: "http://example.blog/3",
+        };
+        const blog4 = {
+          title: "New Blog 4",
+          author: "Amanuel Haile",
+          url: "http://example.blog/4",
+        };
+        await createBlog(page, blog3);
+        await createBlog(page, blog4);
+
+        await expect(
+          page.getByText(`${blog3.title} ${blog3.author}`),
+        ).toBeVisible();
+        await expect(
+          page.getByText(`${blog4.title} ${blog4.author}`),
+        ).toBeVisible();
+
+        const firstBlog = page.locator(".blog").first()
+        const blogs = await page.locator(".blog").all()
+        const blog3Title = page.getByText(`${blog3.title} ${blog3.author}`);
+        expect(await firstBlog.textContent()).not.toStrictEqual(await blog3Title.textContent()) 
+ 
+        const blog3Div = await likeBlog(blog3Title);
+        await likeBlog(blog3Title);
+        await likeBlog(blog3Title);
+        await blog3Div.getByRole("button", { name: "view" }).click();
+        await expect(blog3Div.getByText("likes 3")).toBeVisible();
+        expect(await firstBlog.textContent()).toStrictEqual(await blogs[0].textContent()) 
       });
     });
   });

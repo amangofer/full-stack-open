@@ -12,4 +12,14 @@ const createBlog = async (page, blog) => {
   await page.getByRole("button", { name: "create" }).click();
 };
 
-export { loginWith, createBlog };
+const likeBlog = async (blogTitle) => {
+  const blogDiv = blogTitle.locator("..");
+
+  await blogDiv.getByRole("button", { name: "view" }).click();
+  await blogDiv.getByRole("button", { name: "like" }).click();
+  await blogDiv.getByRole("button", { name: "hide" }).click();
+
+  return blogDiv;
+};
+
+export { loginWith, createBlog, likeBlog };
