@@ -17,6 +17,12 @@ const App = () => {
     dispatch(createAnecdote(content));
   };
 
+  const sortedByVotes = (anecdotes) => {
+    return anecdotes.sort((a, b) => b.votes - a.votes);
+  };
+
+  sortedByVotes(anecdotes);
+
   return (
     <div>
       <h2>Anecdotes</h2>
