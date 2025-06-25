@@ -3,9 +3,9 @@ import { voteFor } from "../reducers/anecdoteReducer";
 import Anecdote from "./Anecdote";
 
 const AnecdoteList = () => {
-  const anecdotes = useSelector(({filter, anecdotes}) => {
+  const anecdotes = useSelector(({ filter, anecdotes }) => {
     if (filter) {
-      return anecdotes.filter((anecdote) => anecdote.content.includes(filter))
+      return anecdotes.filter((anecdote) => anecdote.content.includes(filter));
     }
     return anecdotes;
   });
@@ -16,11 +16,11 @@ const AnecdoteList = () => {
     dispatch(voteFor(id));
   };
 
-  const sortedByVotes = (anecdotes) => {
-    return anecdotes.sort((a, b) => b.votes - a.votes);
-  };
+  // const sortedByVotes = (anecdotes) => {
+  // return anecdotes.sort((a, b) => b.votes - a.votes);
+  // };
 
-  sortedByVotes(anecdotes);
+  // sortedByVotes(anecdotes);
 
   return (
     <>
