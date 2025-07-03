@@ -13,10 +13,8 @@ const createAnecdotes = async (content) => {
   return response.data;
 };
 
-const updateVote = async (id) => {
-  const toUpdate = await axios.get(`${baseUrl}/${id}`);
-  const updated = { ...toUpdate.data, votes: toUpdate.data.votes + 1 };
-  const response = await axios.put(`${baseUrl}/${id}`, updated);
+const updateVote = async (id, update) => {
+  const response = await axios.put(`${baseUrl}/${id}`, update);
   return response.data;
 };
 
